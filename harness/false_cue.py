@@ -6,7 +6,7 @@ import pandas as pd
 
 from .adapter import PersonalCalibration, ReferenceProductionAdapter
 from .models import Observation
-from .profiles import EXERCISES, external_subjects, SHAWN_VARIANTS
+from .profiles import EXERCISES, external_subjects, PERSONAL_VARIANTS
 
 
 def _stable_uniform(key: str, low: float, high: float) -> float:
@@ -42,7 +42,7 @@ def run_false_cue_benchmark(
     if mode not in {"natural","boundary"}:
         raise ValueError("mode must be 'natural' or 'boundary'")
     adapter = adapter or ReferenceProductionAdapter()
-    subjects = list(subjects) if subjects is not None else external_subjects() + SHAWN_VARIANTS
+    subjects = list(subjects) if subjects is not None else external_subjects() + PERSONAL_VARIANTS
     rng=np.random.default_rng(seed)
     rows=[]
     for i in range(n):

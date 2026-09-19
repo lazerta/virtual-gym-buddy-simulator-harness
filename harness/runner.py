@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from .models import SubjectProfile, ExerciseProfile, Scenario, CaseResult
-from .profiles import EXERCISES, external_subjects, SHAWN_VARIANTS
+from .profiles import EXERCISES, external_subjects, PERSONAL_VARIANTS
 from .scenarios import FAMILIES, deterministic_scenario, fuzz_scenario, fuzz_composite_scenario
 from .simulator import simulate
 from .oracle import expected_for
