@@ -93,7 +93,7 @@ def main(argv=None):
     val.add_argument("--out-dir",default="artifacts/profile_ordered_validation")
     val.add_argument("--false-cue-n",type=int,default=20000)
     val.add_argument("--subject-lock-seeds",type=int,default=500)
-    val.add_argument("--quick",action="store_true",help="run one representative anonymous profile, then Shawn")
+    val.add_argument("--quick",action="store_true",help="run one representative anonymous profile, then the personal profile stage")
     val.add_argument("--fps",type=int,default=10,help="episode sampling rate for --quick")
 
     fz=sub.add_parser("fuzz")

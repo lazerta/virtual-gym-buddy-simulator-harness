@@ -38,7 +38,7 @@ def external_subjects() -> list[SubjectProfile]:
     return out
 
 
-# Public repository fallback. These are generic synthetic values, not Shawn's data.
+# Public repository fallback. These are generic synthetic values and contain no user-specific personal data.
 SYNTHETIC_PERSONAL_REFERENCE = SubjectProfile(
     id="personal_synthetic_reference",
     source="nonpersonal-public-fixture",
