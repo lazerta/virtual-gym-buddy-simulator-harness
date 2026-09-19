@@ -38,7 +38,6 @@ def external_subjects() -> list[SubjectProfile]:
     return out
 
 
-# Public repository fallback. These are generic synthetic values and contain no user-specific personal data.
 SYNTHETIC_PERSONAL_REFERENCE = SubjectProfile(
     id="personal_synthetic_reference",
     source="nonpersonal-public-fixture",
@@ -56,7 +55,7 @@ SYNTHETIC_PERSONAL_REFERENCE = SubjectProfile(
 
 
 def load_local_personal_profile(path: str | os.PathLike[str] | None = None) -> SubjectProfile | None:
-    """Load a private local profile. The referenced file is intentionally gitignored."""
+    """Load a private local profile from an ignored JSON file."""
     value = path or os.environ.get("GYM_BUDDY_PERSONAL_PROFILE")
     if not value:
         return None
@@ -64,21 +63,20 @@ def load_local_personal_profile(path: str | os.PathLike[str] | None = None) -> S
     if not p.exists():
         raise FileNotFoundError(f"GYM_BUDDY_PERSONAL_PROFILE does not exist: {p}")
     data=json.loads(p.read_text(encoding="utf-8"))
-    fields={
-        "id": str(data.get("id","local_personal")),
-        "source": "local-private-profile",
-        "stature_scale": float(data.get("stature_scale",1.0)),
-        "torso_ratio": float(data.get("torso_ratio",.310)),
-        "upper_arm_ratio": float(data.get("upper_arm_ratio",.186)),
-        "forearm_ratio": float(data.get("forearm_ratio",.146)),
-        "thigh_ratio": float(data.get("thigh_ratio",.245)),
-        "shin_ratio": float(data.get("shin_ratio",.246)),
-        "shoulder_width_ratio": float(data.get("shoulder_width_ratio",.245)),
-        "hip_width_ratio": float(data.get("hip_width_ratio",.185)),
-        "silhouette_scale": float(data.get("silhouette_scale",1.0)),
-        "visual_variant": str(data.get("visual_variant","current_like")),
-    }
-    return SubjectProfile(**fields)
+    return SubjectProfile(
+        id=str(data.get("id","local_personal")),
+        source="local-private-profile",
+        stature_scale=float(data.get("stature_scale",1.0)),
+        torso_ratio=float(data.get("torso_ratio",.310)),
+        upper_arm_ratio=float(data.get("upper_arm_ratio",.186)),
+        forearm_ratio=float(data.get("forearm_ratio",.146)),
+        thigh_ratio=float(data.get("thigh_ratio",.245)),
+        shin_ratio=float(data.get("shin_ratio",.246)),
+        shoulder_width_ratio=float(data.get("shoulder_width_ratio",.245)),
+        hip_width_ratio=float(data.get("hip_width_ratio",.185)),
+        silhouette_scale=float(data.get("silhouette_scale",1.0)),
+        visual_variant=str(data.get("visual_variant","current_like")),
+    )
 
 
 def personal_test_profiles() -> list[SubjectProfile]:
@@ -95,4 +93,3 @@ def personal_test_profiles() -> list[SubjectProfile]:
 
 PERSONAL_VARIANTS = personal_test_profiles()
 PERSONAL_REFERENCE = PERSONAL_VARIANTS[0]
-

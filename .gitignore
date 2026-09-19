@@ -51,3 +51,5 @@ credentials/
 *.tgz
 *.zip
 *.zip.part
+/config/personal_profile.json
+/private/
