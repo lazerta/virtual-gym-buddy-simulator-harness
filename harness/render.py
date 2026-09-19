@@ -1,7 +1,7 @@
 from __future__ import annotations
 import cv2, numpy as np
 from pathlib import Path
-from .profiles import SHAWN_LIKE, EXERCISES
+from .profiles import SYNTHETIC_PERSONAL_REFERENCE, EXERCISES
 from .scenarios import deterministic_scenario
 from .simulator import simulate
 
@@ -11,7 +11,7 @@ def render_demo(path:str, frames=180):
     ex=EXERCISES[0]
     families=['clean','bystander_cross','occlusion','camera_bump','repeated_issue']
     for fi in range(frames):
-        fam=families[min(len(families)-1,fi//36)]; s=deterministic_scenario(fam,900+fi); obs=simulate(SHAWN_LIKE,ex,s)
+        fam=families[min(len(families)-1,fi//36)]; s=deterministic_scenario(fam,900+fi); obs=simulate(SYNTHETIC_PERSONAL_REFERENCE,ex,s)
         img=np.full((540,960,3),28,np.uint8)
         for x in range(60,900,120): cv2.line(img,(x,80),(x,460),(65,65,65),5)
         cv2.rectangle(img,(260,390),(700,420),(75,75,75),-1)

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from harness.false_cue import run_false_cue_benchmark
-from harness.profiles import SHAWN_VARIANTS, external_subjects
+from harness.profiles import PERSONAL_VARIANTS, external_subjects
 from harness.render import render_demo
 from harness.runner import Harness
 from harness.scenarios import FAMILIES
@@ -25,7 +25,7 @@ def main():
     root=Path(__file__).parent; outdir=root/'artifacts'; outdir.mkdir(exist_ok=True)
     h=Harness()
     d=h.deterministic(external_subjects(),calibrated=False); d.to_csv(outdir/'deterministic_subject_lock.csv',index=False)
-    s=h.deterministic(SHAWN_VARIANTS,calibrated=True); s.to_csv(outdir/'shawn_subject_lock.csv',index=False)
+    s=h.deterministic(PERSONAL_VARIANTS,calibrated=True); s.to_csv(outdir/'personal_subject_lock.csv',index=False)
     fg=h.fuzz(a.fuzz_n,seed=20260919,calibrated=False); fc=h.fuzz(a.fuzz_n,seed=20260919,calibrated=True)
     fg.to_csv(outdir/f'fuzz_generic_{a.fuzz_n}.csv',index=False); fc.to_csv(outdir/f'fuzz_calibrated_{a.fuzz_n}.csv',index=False)
     sl=run_subject_lock_benchmark(a.subject_lock_seeds); sl.to_csv(outdir/'subject_lock_benchmark.csv',index=False)
@@ -34,7 +34,7 @@ def main():
     summary={
       'scenario_family_count':len(FAMILIES),
       'deterministic':{'pass':int(d.passed.sum()),'total':len(d),'rate':float(d.passed.mean())},
-      'shawn_variants':{'pass':int(s.passed.sum()),'total':len(s),'rate':float(s.passed.mean())},
+      'personal_variants':{'pass':int(s.passed.sum()),'total':len(s),'rate':float(s.passed.mean())},
       f'fuzz_generic_{a.fuzz_n}':{'pass':int(fg.passed.sum()),'total':len(fg),'rate':float(fg.passed.mean())},
       f'fuzz_calibrated_{a.fuzz_n}':{'pass':int(fc.passed.sum()),'total':len(fc),'rate':float(fc.passed.mean())},
       'generic_failures_by_scenario':fg.loc[~fg.passed].scenario.value_counts().to_dict(),

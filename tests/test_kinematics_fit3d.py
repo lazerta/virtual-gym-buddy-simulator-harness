@@ -54,11 +54,11 @@ def test_lateral_raise_model_has_variable_scapulohumeral_rhythm_and_supported_va
     assert all(1.1 <= r <= 2.7 for r in ratios)
 
 
-def test_kinematic_model_benchmark_external_and_shawn_smoke():
+def test_kinematic_model_benchmark_external_and_personal_smoke():
     from harness.exercise_kinematics import run_kinematic_model_benchmark
-    from harness.profiles import external_subjects, SHAWN_LIKE
+    from harness.profiles import external_subjects, PERSONAL_REFERENCE
     a=run_kinematic_model_benchmark([external_subjects()[6]],fps=20)
-    b=run_kinematic_model_benchmark([SHAWN_LIKE],fps=20)
+    b=run_kinematic_model_benchmark([PERSONAL_REFERENCE],fps=20)
     assert a.passed.all(), a.loc[~a.passed].head().to_dict('records')
     assert b.passed.all(), b.loc[~b.passed].head().to_dict('records')
 

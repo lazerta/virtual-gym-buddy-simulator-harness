@@ -1,4 +1,4 @@
-from harness.profiles import EXERCISES, external_subjects, SHAWN_VARIANTS
+from harness.profiles import EXERCISES, external_subjects, PERSONAL_VARIANTS
 from harness.scenarios import deterministic_scenario
 from harness.simulator import simulate
 from harness.oracle import expected_for
@@ -13,8 +13,8 @@ def test_oracle_does_not_take_observation():
 def test_single_issue_forbids_cue():
     r=Harness().run_case(external_subjects()[0],EXERCISES[0],deterministic_scenario('single_issue',4)); assert r.expected.cue_forbidden
 
-def test_shawn_variants_all_execute():
-    h=Harness(); rs=[h.run_case(x,EXERCISES[0],deterministic_scenario('clean',9),True) for x in SHAWN_VARIANTS]; assert len(rs)==6
+def test_personal_variants_all_execute():
+    h=Harness(); rs=[h.run_case(x,EXERCISES[0],deterministic_scenario('clean',9),True) for x in PERSONAL_VARIANTS]; assert len(rs)==6
 
 def test_bystander_is_ignored_with_strong_primary_lock():
     r=Harness().run_case(external_subjects()[0],EXERCISES[0],deterministic_scenario('bystander_bg',21)); assert r.passed and not r.observed.pause

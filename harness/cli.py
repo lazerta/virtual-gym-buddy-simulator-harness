@@ -12,7 +12,7 @@ from .gym_episode import run_commercial_gym_episode_benchmark
 from .rep_detection import run_rep_detection_benchmark
 from .exercise_kinematics import run_kinematic_model_benchmark
 from .fit3d_adapter import Fit3DLocalAdapter, run_fit3d_rep_replay
-from .profiles import external_subjects, SHAWN_VARIANTS
+from .profiles import external_subjects, PERSONAL_VARIANTS
 
 
 def main(argv=None):
@@ -38,17 +38,17 @@ def main(argv=None):
     f3i.add_argument("--out",default="artifacts/fit3d_index.csv")
 
     rd=sub.add_parser("rep-detection")
-    rd.add_argument("--shawn",action="store_true")
+    rd.add_argument("--personal",action="store_true")
     rd.add_argument("--fps",type=int,default=20)
     rd.add_argument("--out",default="artifacts/rep_detection.csv")
 
     kin=sub.add_parser("kinematic-models")
-    kin.add_argument("--shawn",action="store_true")
+    kin.add_argument("--personal",action="store_true")
     kin.add_argument("--fps",type=int,default=20)
     kin.add_argument("--out",default="artifacts/kinematic_models.csv")
 
     det=sub.add_parser("deterministic")
-    det.add_argument("--shawn",action="store_true")
+    det.add_argument("--personal",action="store_true")
     det.add_argument("--calibrated",action="store_true")
     det.add_argument("--out",default="artifacts/deterministic.csv")
 
@@ -59,7 +59,7 @@ def main(argv=None):
 
     fc=sub.add_parser("false-cue")
     fc.add_argument("--n",type=int,default=100000)
-    fc.add_argument("--shawn",action="store_true")
+    fc.add_argument("--personal",action="store_true")
     fc.add_argument("--calibrated",action="store_true"); fc.add_argument("--mode",choices=["natural","boundary"],default="natural")
     fc.add_argument("--out",default="artifacts/false_cue_benchmark.csv")
     fc.add_argument("--report",default="artifacts/false_cue_summary.json")
@@ -71,20 +71,20 @@ def main(argv=None):
 
     cfz=sub.add_parser("composite-fuzz")
     cfz.add_argument("--n",type=int,default=20000)
-    cfz.add_argument("--shawn",action="store_true")
+    cfz.add_argument("--personal",action="store_true")
     cfz.add_argument("--seed",type=int,default=20260919)
     cfz.add_argument("--calibrated",action="store_true")
     cfz.add_argument("--max-components",type=int,default=3)
     cfz.add_argument("--out",default="artifacts/composite_fuzz.csv")
 
     cg=sub.add_parser("commercial-gym")
-    cg.add_argument("--shawn",action="store_true")
+    cg.add_argument("--personal",action="store_true")
     cg.add_argument("--calibrated",action="store_true")
     cg.add_argument("--out",default="artifacts/commercial_gym.csv")
 
 
     cge=sub.add_parser("commercial-gym-episodes")
-    cge.add_argument("--shawn",action="store_true")
+    cge.add_argument("--personal",action="store_true")
     cge.add_argument("--seeds-per-episode",type=int,default=1)
     cge.add_argument("--fps",type=int,default=10)
     cge.add_argument("--out",default="artifacts/commercial_gym_episodes.csv")
@@ -130,21 +130,21 @@ def main(argv=None):
         print(f"fit3d_records={len(df)} actions={df.action.nunique() if len(df) else 0} subjects={df.subject.nunique() if len(df) else 0}")
         return 0 if len(df)>0 else 2
     if a.cmd=="rep-detection":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=run_rep_detection_benchmark(subjects,fps=a.fps)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         print(f"rep_detection_pass_rate={df.passed.mean():.6f} ({int(df.passed.sum())}/{len(df)})")
         if (~df.passed).any(): print(df.loc[~df.passed].head(20).to_string(index=False))
         return 0 if df.passed.all() else 2
     if a.cmd=="kinematic-models":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=run_kinematic_model_benchmark(subjects,fps=a.fps)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         print(f"kinematic_model_pass_rate={df.passed.mean():.6f} ({int(df.passed.sum())}/{len(df)})")
         if (~df.passed).any(): print(df.loc[~df.passed].head(20).to_string(index=False))
         return 0 if df.passed.all() else 2
     if a.cmd=="deterministic":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=Harness().deterministic(subjects,calibrated=a.calibrated)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         print(f"deterministic_pass_rate={df.passed.mean():.6f} ({int(df.passed.sum())}/{len(df)})")
@@ -158,7 +158,7 @@ def main(argv=None):
             print(df.groupby("strategy").passed.mean().sort_values(ascending=False).to_string())
         return 0 if df.passed.all() else 2
     if a.cmd=="false-cue":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=run_false_cue_benchmark(a.n,calibrated=a.calibrated,mode=a.mode,subjects=subjects)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         summary=false_cue_summary(df,FalseCueGate(a.overall_max,a.exercise_max,a.subject_max))
@@ -166,7 +166,7 @@ def main(argv=None):
         print(json.dumps(summary,indent=2))
         return 2 if a.fail_on_gate and not summary["passed_gate"] else 0
     if a.cmd=="composite-fuzz":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=Harness().composite_fuzz(a.n,seed=a.seed,calibrated=a.calibrated,subjects=subjects,max_components=a.max_components)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         print(f"composite_fuzz_pass_rate={df.passed.mean():.6f} ({int(df.passed.sum())}/{len(df)})")
@@ -175,7 +175,7 @@ def main(argv=None):
         return 0
 
     if a.cmd=="commercial-gym":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=Harness().commercial_gym_deterministic(subjects,calibrated=a.calibrated)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         print(f"commercial_gym_pass_rate={df.passed.mean():.6f} ({int(df.passed.sum())}/{len(df)})")
@@ -183,7 +183,7 @@ def main(argv=None):
 
 
     if a.cmd=="commercial-gym-episodes":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=run_commercial_gym_episode_benchmark(subjects,seeds_per_episode=a.seeds_per_episode,fps=a.fps)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         print(f"commercial_gym_episode_pass_rate={df.passed.mean():.6f} ({int(df.passed.sum())}/{len(df)})")
@@ -201,7 +201,7 @@ def main(argv=None):
         return 0 if all(x["passed"] for x in blocking) else 2
 
     if a.cmd=="fuzz":
-        subjects=SHAWN_VARIANTS if a.shawn else external_subjects()
+        subjects=PERSONAL_VARIANTS if a.personal else external_subjects()
         df=Harness().fuzz(a.n,seed=a.seed,calibrated=a.calibrated,subjects=subjects)
         Path(a.out).parent.mkdir(parents=True,exist_ok=True); df.to_csv(a.out,index=False)
         print(f"fuzz_pass_rate={df.passed.mean():.6f} ({int(df.passed.sum())}/{len(df)})")

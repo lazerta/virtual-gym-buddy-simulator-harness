@@ -96,7 +96,3 @@ def personal_test_profiles() -> list[SubjectProfile]:
 PERSONAL_VARIANTS = personal_test_profiles()
 PERSONAL_REFERENCE = PERSONAL_VARIANTS[0]
 
-# Compatibility aliases for older harness call sites. They contain no public personal data
-# unless the user explicitly points GYM_BUDDY_PERSONAL_PROFILE at a local private JSON file.
-SHAWN_LIKE = PERSONAL_REFERENCE
-SHAWN_VARIANTS = PERSONAL_VARIANTS
