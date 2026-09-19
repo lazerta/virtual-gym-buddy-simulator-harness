@@ -1,4 +1,9 @@
 from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
 from .models import SubjectProfile, ExerciseProfile
 
 EXERCISES = [
@@ -14,9 +19,9 @@ EXERCISES = [
     ExerciseProfile("chest_supported_t_row", "row", 45, 25, 0.48, 0.90, True),
 ]
 
-# Anonymous stress fixtures derived around published anthropometric ranges.
-# They are not literal individual ANSUR records.
+
 def external_subjects() -> list[SubjectProfile]:
+    """Anonymous morphology stress fixtures around published anthropometric ranges."""
     anchors = [
         ("small", .92, .305, .180, .142, .238, .242, .238, .181),
         ("lower_mid", .96, .308, .183, .144, .241, .244, .241, .183),
@@ -32,18 +37,66 @@ def external_subjects() -> list[SubjectProfile]:
         out.append(SubjectProfile(f"ansur_{name}_long_torso","ANSUR-II-derived-stress",scale,torso*1.06,ua*.965,fa*.965,th*.975,sh*.975,sw,hw,scale))
     return out
 
-SHAWN_LIKE = SubjectProfile(
-    id="shawn_like_v0_1", source="user-reference-images-bootstrap",
-    stature_scale=1.0, torso_ratio=.312, upper_arm_ratio=.186, forearm_ratio=.145,
-    thigh_ratio=.244, shin_ratio=.246, shoulder_width_ratio=.249,
-    hip_width_ratio=.184, silhouette_scale=1.0, visual_variant="current_like"
+
+# Public repository fallback. These are generic synthetic values, not Shawn's data.
+SYNTHETIC_PERSONAL_REFERENCE = SubjectProfile(
+    id="personal_synthetic_reference",
+    source="nonpersonal-public-fixture",
+    stature_scale=1.0,
+    torso_ratio=.310,
+    upper_arm_ratio=.186,
+    forearm_ratio=.146,
+    thigh_ratio=.245,
+    shin_ratio=.246,
+    shoulder_width_ratio=.245,
+    hip_width_ratio=.185,
+    silhouette_scale=1.0,
+    visual_variant="neutral",
 )
 
-SHAWN_VARIANTS = [
-    SHAWN_LIKE,
-    SubjectProfile(**{**SHAWN_LIKE.__dict__, "id":"shawn_like_loose_clothes", "silhouette_scale":1.06, "visual_variant":"loose_clothes"}),
-    SubjectProfile(**{**SHAWN_LIKE.__dict__, "id":"shawn_like_fitted", "silhouette_scale":.98, "visual_variant":"fitted"}),
-    SubjectProfile(**{**SHAWN_LIKE.__dict__, "id":"shawn_like_leaner", "silhouette_scale":.94, "visual_variant":"leaner"}),
-    SubjectProfile(**{**SHAWN_LIKE.__dict__, "id":"shawn_like_heavier", "silhouette_scale":1.08, "visual_variant":"heavier"}),
-    SubjectProfile(**{**SHAWN_LIKE.__dict__, "id":"shawn_like_glasses_hair", "visual_variant":"glasses_high_hair"}),
-]
+
+def load_local_personal_profile(path: str | os.PathLike[str] | None = None) -> SubjectProfile | None:
+    """Load a private local profile. The referenced file is intentionally gitignored."""
+    value = path or os.environ.get("GYM_BUDDY_PERSONAL_PROFILE")
+    if not value:
+        return None
+    p=Path(value).expanduser()
+    if not p.exists():
+        raise FileNotFoundError(f"GYM_BUDDY_PERSONAL_PROFILE does not exist: {p}")
+    data=json.loads(p.read_text(encoding="utf-8"))
+    fields={
+        "id": str(data.get("id","local_personal")),
+        "source": "local-private-profile",
+        "stature_scale": float(data.get("stature_scale",1.0)),
+        "torso_ratio": float(data.get("torso_ratio",.310)),
+        "upper_arm_ratio": float(data.get("upper_arm_ratio",.186)),
+        "forearm_ratio": float(data.get("forearm_ratio",.146)),
+        "thigh_ratio": float(data.get("thigh_ratio",.245)),
+        "shin_ratio": float(data.get("shin_ratio",.246)),
+        "shoulder_width_ratio": float(data.get("shoulder_width_ratio",.245)),
+        "hip_width_ratio": float(data.get("hip_width_ratio",.185)),
+        "silhouette_scale": float(data.get("silhouette_scale",1.0)),
+        "visual_variant": str(data.get("visual_variant","current_like")),
+    }
+    return SubjectProfile(**fields)
+
+
+def personal_test_profiles() -> list[SubjectProfile]:
+    base=load_local_personal_profile() or SYNTHETIC_PERSONAL_REFERENCE
+    return [
+        base,
+        SubjectProfile(**{**base.__dict__, "id":f"{base.id}_loose_clothes", "silhouette_scale":base.silhouette_scale*1.06, "visual_variant":"loose_clothes"}),
+        SubjectProfile(**{**base.__dict__, "id":f"{base.id}_fitted", "silhouette_scale":base.silhouette_scale*.98, "visual_variant":"fitted"}),
+        SubjectProfile(**{**base.__dict__, "id":f"{base.id}_leaner_stress", "silhouette_scale":base.silhouette_scale*.94, "visual_variant":"leaner_stress"}),
+        SubjectProfile(**{**base.__dict__, "id":f"{base.id}_heavier_stress", "silhouette_scale":base.silhouette_scale*1.08, "visual_variant":"heavier_stress"}),
+        SubjectProfile(**{**base.__dict__, "id":f"{base.id}_appearance_variant", "visual_variant":"appearance_variant"}),
+    ]
+
+
+PERSONAL_VARIANTS = personal_test_profiles()
+PERSONAL_REFERENCE = PERSONAL_VARIANTS[0]
+
+# Compatibility aliases for older harness call sites. They contain no public personal data
+# unless the user explicitly points GYM_BUDDY_PERSONAL_PROFILE at a local private JSON file.
+SHAWN_LIKE = PERSONAL_REFERENCE
+SHAWN_VARIANTS = PERSONAL_VARIANTS

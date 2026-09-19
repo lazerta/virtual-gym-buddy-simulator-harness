@@ -20,11 +20,21 @@ uv run python -m harness.cli validate-profiles --quick --fps 10
 
 ## Codex handoff prompt
 
-> Pull the latest `main`, read this README and canonical Google Drive docs `00–07`, set up the project with `uv`, then run `pytest`, `python -m harness.doctor`, and `python -m harness.cli validate-profiles --quick --fps 10`. Fix the correct layer; do not weaken tests just to get green. Keep raw Fit3D/other datasets, personal media, secrets, caches, virtualenvs, generated videos, CSV dumps, and large artifacts out of Git. If `FIT3D_ROOT` is absent, report real Fit3D replay as `NOT_RUN`.
+> Pull the latest `main`, read this README and canonical Google Drive docs `00–07`, set up the project with `uv`, then run `pytest`, `python -m harness.doctor`, and `python -m harness.cli validate-profiles --quick --fps 10`. Fix the correct layer; do not weaken tests just to get green. Keep raw Fit3D/other datasets, personal media/data, secrets, caches, virtualenvs, generated videos, CSV dumps, and large artifacts out of Git. If `FIT3D_ROOT` is absent, report real Fit3D replay as `NOT_RUN`.
+
+## Private personal profile
+
+The public repo ships only a non-personal synthetic fallback. To run the personal stage with a real local profile:
+
+```powershell
+$env:GYM_BUDDY_PERSONAL_PROFILE="D:\Private\gym-buddy-personal-profile.json"
+```
+
+Copy `config/personal_profile.example.json` outside the repo, fill it locally, and never commit the real file.
 
 ## Core rules
 
-- External/anonymous quick validation passes before Shawn-like validation runs.
+- External/anonymous quick validation passes before the personal stage runs.
 - `PrimarySubjectLock` and `TrackingQualityGate` are separate.
 - Multiple people do not automatically pause analysis.
 - Rep detection is temporal and uses reusable movement primitives.

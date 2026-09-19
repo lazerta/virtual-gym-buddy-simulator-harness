@@ -1,0 +1,13 @@
+{
+  "id": "local_personal",
+  "stature_scale": 1.0,
+  "torso_ratio": 0.31,
+  "upper_arm_ratio": 0.186,
+  "forearm_ratio": 0.146,
+  "thigh_ratio": 0.245,
+  "shin_ratio": 0.246,
+  "shoulder_width_ratio": 0.245,
+  "hip_width_ratio": 0.185,
+  "silhouette_scale": 1.0,
+  "visual_variant": "current_like"
+}
