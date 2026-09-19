@@ -1,0 +1,53 @@
+# Python / virtual environments
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+.coverage
+htmlcov/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Secrets / local machine configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials/
+
+# Generated harness outputs
+/artifacts/
+*.mp4
+*.avi
+*.mov
+*.parquet
+*.csv
+
+# Licensed/local-only datasets and body models
+/datasets/fit3d/
+/datasets/fit3d_raw/
+/datasets/bedlam/
+/datasets/agora/
+/datasets/amass/
+/smplx_body_models/
+/ghumrepo/
+
+# Personal/local-only inputs
+/personal_data/
+/personal_media/
+/local_data/
+
+# Local downloads / archives
+*.tar.gz
+*.tgz
+*.zip
+*.zip.part

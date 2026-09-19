@@ -1,0 +1,33 @@
+version: 1
+principle: >-
+  Sources constrain plausible motion variables and ranges. They do not define a single
+  perfect technique and are not automatically converted into form-error rules.
+sources:
+  - id: smith_squat_digital_human_2017
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC5336117/
+    exercise: smith_squat
+    harness_use: [foot_offset_height_ratio_variation, guide_slope_variation, hip_knee_trunk_coordination]
+  - id: parallel_squat_knee_depth_2014
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC4064719/
+    exercise: smith_squat
+  - id: deep_squat_joint_angles_2020
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC7276781/
+    exercise: smith_squat
+  - id: incline_bench_joint_motion_2022
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC8877248/
+    exercise: incline_db_press
+  - id: bench_angle_protocol_2020
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC7579505/
+    exercise: incline_db_press
+  - id: dumbbell_rom_2015
+    url: https://pubmed.ncbi.nlm.nih.gov/26528421/
+    exercise: incline_db_press
+  - id: lateral_raise_bodybuilders_2020
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC7503819/
+    exercise: lateral_raise
+  - id: scapulohumeral_plane_2013
+    url: https://pubmed.ncbi.nlm.nih.gov/23389787/
+    exercise: lateral_raise
+  - id: scapulohumeral_variability_2010_2012
+    urls: [https://pubmed.ncbi.nlm.nih.gov/19995681/, https://pmc.ncbi.nlm.nih.gov/articles/PMC3377910/]
+    exercise: lateral_raise

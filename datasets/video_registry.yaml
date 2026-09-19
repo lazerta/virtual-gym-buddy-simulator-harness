@@ -1,0 +1,22 @@
+version: 1
+videos:
+  - id: pexels-dumbbell-press-33261218
+    exercise: dumbbell_press
+    url: https://www.pexels.com/video/intense-dumbbell-press-workout-in-home-gym-33261218/
+    tags: [real_human, dumbbell, bench, indoor]
+    status: registry_only
+  - id: pexels-bench-press-36184751
+    exercise: barbell_bench
+    url: https://www.pexels.com/video/intense-bench-press-workout-at-the-gym-36184751/
+    tags: [real_human, barbell, bench, dark_gym]
+    status: registry_only
+  - id: pexels-bench-spotter-4859749
+    exercise: barbell_bench
+    url: https://www.pexels.com/video/man-working-out-at-the-gym-4859749/
+    tags: [real_human, bench, spotter, multi_person]
+    status: registry_only
+  - id: pixabay-gym-66992
+    exercise: environment
+    url: https://pixabay.com/videos/gym-workout-training-fitness-66992/
+    tags: [commercial_gym, real_lighting, background_motion]
+    status: registry_only

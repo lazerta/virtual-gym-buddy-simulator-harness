@@ -1,0 +1,72 @@
+version: 1
+sources:
+  ansur_ii:
+    role: anthropometry_profile_source
+    url: https://www.openlab.psu.edu/datasets/ansur2/
+    policy: derive_anonymous_normalized_stress_profiles
+    raw_assets_bundled: false
+  makehuman_mpfb:
+    role: future_blender_humanoid_provider
+    url: https://static.makehumancommunity.org/mpfb/docs/getting_started.html
+    asset_license: CC0-core-assets
+    code_license: GPL
+    raw_assets_bundled: false
+  bedlam:
+    role: optional_smplx_clothing_camera_provider
+    url: https://bedlam.is.tue.mpg.de/
+    raw_assets_bundled: false
+    policy: adapter_only_until_license_requirements_satisfied
+  agora:
+    role: optional_multi_person_clothed_scene_provider
+    url: https://agora.is.tue.mpg.de/
+    raw_assets_bundled: false
+    policy: adapter_only_until_license_requirements_satisfied
+  amass:
+    role: optional_motion_provider
+    url: https://amass.is.tue.mpg.de/
+    raw_assets_bundled: false
+    policy: adapter_only_until_license_requirements_satisfied
+  pexels_dumbbell_press_33261218:
+    role: real_video_candidate
+    url: https://www.pexels.com/video/intense-dumbbell-press-workout-in-home-gym-33261218/
+    stated_use: free_to_use
+    exercise: dumbbell_press
+    raw_assets_bundled: false
+  pexels_bench_press_36184751:
+    role: real_video_candidate
+    url: https://www.pexels.com/video/intense-bench-press-workout-at-the-gym-36184751/
+    stated_use: free_to_use
+    exercise: bench_press
+    raw_assets_bundled: false
+  pexels_bench_press_spotter_4859749:
+    role: real_video_candidate
+    url: https://www.pexels.com/video/man-working-out-at-the-gym-4859749/
+    stated_use: free_to_use
+    exercise: bench_press
+    scenario_tags: [spotter, multi_person]
+    raw_assets_bundled: false
+  pixabay_gym_66992:
+    role: real_gym_environment_video_candidate
+    url: https://pixabay.com/videos/gym-workout-training-fitness-66992/
+    stated_license: Pixabay Content License
+    resolution: 1920x1080
+    raw_assets_bundled: false
+  fit3d:
+    role: primary_real_mocap_motion_source
+    url: https://fit3d.imar.ro/
+    download_url: https://fit3d.imar.ro/download
+    official_tools: https://github.com/sminchisescu-research/imar_vision_datasets_tools
+    license: single_user_noncommercial_scientific_research
+    policy: local_adapter_only_no_redistribution
+    raw_assets_bundled: false
+    local_env_var: FIT3D_ROOT
+    data_contract:
+      joints3d_25: "<split>/<subject>/joints3d_25/<action>.json"
+      rep_annotations: "<split>/<subject>/rep_ann.json"
+      camera_parameters: "<split>/<subject>/camera_parameters/<camera>/<action>.json"
+      fps: 50
+    harness_use:
+      - real 3d motion trajectories
+      - independent repetition-interval oracle
+      - movement-primitive discovery and replay
+      - subject/exercise motion distribution
