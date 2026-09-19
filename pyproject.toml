@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "gym-buddy-test-harness"
 version = "0.5.0"
@@ -16,6 +20,9 @@ all = ["pytest>=8", "hypothesis>=6", "pyarrow>=15", "scipy>=1.11", "trimesh>=4",
 
 [project.scripts]
 gym-buddy-harness = "harness.cli:main"
+
+[tool.setuptools]
+packages = ["harness"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
