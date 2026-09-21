@@ -7,8 +7,10 @@ import numpy as np
 
 from harness.video_motion_pipeline import (
     musclemimic_command,
+    public_video_target,
     resolve_paths,
     wham_command,
+    yt_dlp_command,
 )
 from harness.wham_adapter import (
     convert_wham_to_amass,
@@ -133,3 +135,26 @@ def test_pipeline_commands_are_external_open_source_glue(tmp_path):
     assert mm[:3] == ["uv", "run", "python"]
     assert str(paths.amass_npz) in mm
     assert str(paths.myofullbody_npz) in mm
+
+
+def test_public_video_url_target_is_deterministic_and_scoped(tmp_path):
+    url = "https://example.com/watch?v=abc123"
+    a = public_video_target(url, "smith_squat", work_root=tmp_path)
+    b = public_video_target(url, "smith_squat", work_root=tmp_path)
+    c = public_video_target(url + "x", "smith_squat", work_root=tmp_path)
+
+    assert a == b
+    assert a != c
+    assert a.suffix == ".mp4"
+    assert "smith_squat" in a.parts
+
+
+def test_yt_dlp_command_is_single_video_and_mp4(tmp_path):
+    target = tmp_path / "source.mp4"
+    cmd = yt_dlp_command("https://example.com/video", target)
+
+    assert cmd[1:3] == ["-m", "yt_dlp"]
+    assert "--no-playlist" in cmd
+    assert "--merge-output-format" in cmd
+    assert "mp4" in cmd
+    assert "after_move:filepath" in cmd
