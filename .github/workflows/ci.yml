@@ -20,6 +20,7 @@ jobs:
       - run: python -m pytest -q
       - run: python -m pytest -q tests/test_mmfit_adapter.py
       - run: python -m pytest -q tests/test_wham_video_pipeline.py
+      - run: python -m pytest -q tests/test_frame_contract.py tests/test_frame_server.py tests/test_mujoco_frame_export.py
 
   visual-smoke:
     runs-on: ubuntu-latest

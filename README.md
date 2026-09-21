@@ -200,3 +200,65 @@ uv run gym-buddy-sim --exercise incline_smith_press
 Use `--dry-run` to print the WHAM and MuscleMimic commands without executing
 them. Only download/process public videos when you have the right to do so and
 in accordance with the source platform's terms.
+
+
+## Camera / MediaPipe test adapter
+
+The simulator and the Android app meet at an RGB frame boundary. Ground truth is
+never injected into the app's perception path.
+
+```text
+MyoFullBody + MuJoCo
+        |
+        v
+gym-buddy-export-frames
+        |
+        +-- frames/*.jpg
+        +-- manifest.json
+        +-- ground_truth/*.json
+        |
+        v
+gym-buddy-frame-server
+        |
+        +-- GET  /v1/session
+        +-- GET  /v1/frames/{frame_id}
+        +-- POST /v1/results
+        |
+        v
+Android FrameSource -> MediaPipe -> Gym Buddy analysis
+        |
+        v
+/v1/results
+        |
+        v
+Harness compares against ground_truth/*.json
+```
+
+Export one retargeted MyoFullBody motion:
+
+```bash
+uv run gym-buddy-export-frames \
+  --motion motions/myofullbody/smith_squat.npz \
+  --output artifacts/frame_sessions/smith_squat_001 \
+  --session-id smith_squat_001 \
+  --exercise smith_squat \
+  --overwrite
+```
+
+Serve it:
+
+```bash
+uv run gym-buddy-frame-server \
+  --session artifacts/frame_sessions/smith_squat_001 \
+  --host 0.0.0.0 \
+  --port 8788
+```
+
+The app consumes only `/v1/session` and `/v1/frames/{id}`. The
+`/v1/ground-truth/{id}` endpoint is harness-only and must not be wired into the
+production perception path.
+
+Every app result must echo the exact `session_id`, `frame_id`, and
+`timestamp_us`; the harness rejects timestamp mismatches. This keeps MediaPipe
+video/live-stream timing deterministic and makes repeated regression runs
+reproducible.
