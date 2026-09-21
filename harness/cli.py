@@ -20,6 +20,9 @@ def main(argv=None):
     sub=p.add_subparsers(dest="cmd",required=True)
     sub.add_parser("env-check")
     sub.add_parser("mujoco-smoke")
+    mm=sub.add_parser("mmfit-check")
+    mm.add_argument("--root",default=None)
+    mm.add_argument("--load",action="store_true")
     ms=sub.add_parser("motion-status")
     ms.add_argument("--root",default=None)
 
@@ -105,6 +108,13 @@ def main(argv=None):
     a=p.parse_args(argv)
     if a.cmd=="env-check":
         return print_environment_report()
+    if a.cmd=="mmfit-check":
+        from .mmfit_adapter import MMFitLocalAdapter
+        adapter=MMFitLocalAdapter(a.root)
+        summary=adapter.summary(load_records=a.load)
+        summary["canonical_bridge_coverage"]=adapter.canonical_bridge_coverage()
+        print(json.dumps(summary,indent=2))
+        return 0 if summary["record_count"]>0 else 2
     if a.cmd=="mujoco-smoke":
         from .mujoco_backend import MyoFullBodySimulator
         sim=MyoFullBodySimulator()
