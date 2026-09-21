@@ -17,7 +17,7 @@ class MuJoCoBackendUnavailable(RuntimeError):
 class GymEquipmentConfig:
     barbell_mass_kg: float = 20.0
     dumbbell_mass_kg: float = 10.0
-    add_floor: bool = True
+    add_floor: bool = False
 
 
 def _imports():
