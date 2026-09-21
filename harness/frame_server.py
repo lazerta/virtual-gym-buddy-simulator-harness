@@ -85,6 +85,9 @@ def make_handler(store: FrameSessionStore):
             try:
                 if path == "/v1/session":
                     payload = store.manifest.to_dict()
+                    for frame in payload["frames"]:
+                        frame.pop("ground_truth_path", None)
+                        frame.pop("image_path", None)
                     payload["protocol"] = {
                         "frame": "/v1/frames/{frame_id}",
                         "ground_truth": "/v1/ground-truth/{frame_id}",
