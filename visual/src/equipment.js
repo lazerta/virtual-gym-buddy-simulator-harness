@@ -155,3 +155,26 @@ export async function hydrateCommercialGym(stations){
   if(failures.length) console.warn("Some real gym assets failed to hydrate",failures.map(x=>x.reason));
   return {loaded:results.length-failures.length,failed:failures.length};
 }
+
+
+export async function loadGymBackdrop(scene){
+  const root=new THREE.Group();
+  root.name="commercial-gym-backdrop";
+  scene.add(root);
+  const loader=new GLTFLoader();
+  const {scene:obj}=await loadGLB(loader,ASSET_PATHS.gym.studio,root);
+  obj.scale.setScalar(.72);
+  obj.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(obj);
+  const c=b.getCenter(new THREE.Vector3());
+  obj.position.x-=c.x;
+  obj.position.z-=c.z+7.5;
+  obj.position.y-=b.min.y;
+  obj.traverse(o=>{
+    if(o.isMesh&&o.material){
+      const mats=Array.isArray(o.material)?o.material:[o.material];
+      for(const m of mats){m.roughness=Math.max(.35,m.roughness??.5);}
+    }
+  });
+  return root;
+}
