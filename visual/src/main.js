@@ -6,6 +6,8 @@ import {resolveRig,captureRest,captureRootRest,normalizeAvatar,measureRig} from 
 import {createCommercialGym,hydrateCommercialGym,loadGymBackdrop} from "./equipment.js";
 import {applyMotion,cyclePhase} from "./motion.js";
 import {collectGroundTruth} from "./groundTruth.js";
+import {loadMotionPriors} from "./motionPrior.js";
+import {GymPhysics,registerGymPhysics} from "./physics.js";
 
 const app=document.getElementById("app"),hud=document.getElementById("hud");
 const avatarSel=document.getElementById("avatar"),exerciseSel=document.getElementById("exercise"),formSel=document.getElementById("form");
@@ -47,14 +49,16 @@ sun.shadow.camera.left=-7;sun.shadow.camera.right=7;sun.shadow.camera.top=7;sun.
 scene.add(sun);
 
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,24),new THREE.MeshStandardMaterial({color:0x303336,roughness:.96}));
-floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
-const grid=new THREE.GridHelper(24,24,0x494d50,0x373a3d);grid.position.y=.002;scene.add(grid);
+floor.rotation.x=-Math.PI/2;
+floor.receiveShadow=true;
+scene.add(floor);
 
 const gym=createCommercialGym(scene);
 const loader=new GLTFLoader();
 
 let model=null,rig={},rigRest={},rootRest=null,metrics=null,generation=0,currentEquipment=null;
 let playing=true,manualPhase=0,lastTruth=null;
+let physics=null,motionPriors={squat:null};
 const clock=new THREE.Clock();
 let assetHealth={realEquipment:0,failedEquipment:0,backdrop:false};
 
@@ -89,12 +93,16 @@ async function loadAvatar(id=avatarSel.value){
 
 function updateHUD(gt){
   const inFrame=Object.values(gt.joints2d).filter(x=>x.in_frame).length;
-  hud.textContent=`Gym Buddy Real 3D Harness
+  const physicsErr=gt.physics?.max_error_m??0;
+  const prior=gt.motion_prior?.source??"constraint";
+  hud.textContent=`Gym Buddy Hybrid 3D Harness
 avatar: ${gt.avatar_id} (${metrics.height.toFixed(2)} m)
 exercise: ${gt.exercise_id}
 form: ${gt.form_id}
 phase: ${gt.phase.toFixed(3)}
-constraint error: ${(gt.constraint_error_m*100).toFixed(1)} cm
+human IK error: ${(gt.constraint_error_m*100).toFixed(1)} cm
+equipment physics error: ${(physicsErr*100).toFixed(1)} cm
+motion source: ${prior}
 joints: ${Object.keys(gt.joints3d).length}  in-frame: ${inFrame}
 L elbow: ${gt.joint_angles.left_elbow_flex_deg?.toFixed(1)??"n/a"}°
 L knee: ${gt.joint_angles.left_knee_flex_deg?.toFixed(1)??"n/a"}°
@@ -102,17 +110,43 @@ real assets: ${assetHealth.realEquipment}  failed: ${assetHealth.failedEquipment
 issues: ${JSON.stringify(gt.issues)}`;
 }
 
-function renderAtPhase(phase){
-  if(!model||!metrics||!currentEquipment)return null;
+function solveTargetsAtPhase(phase){
   const p=Math.max(0,Math.min(1,Number(phase)||0));
-  const truth=applyMotion({
-    exercise:exerciseSel.value,form:formSel.value,phase:p,
-    model,rig,rigRest,rootRest,metrics,station:currentEquipment
+  return applyMotion({
+    exercise:exerciseSel.value,
+    form:formSel.value,
+    phase:p,
+    model,rig,rigRest,rootRest,metrics,
+    station:currentEquipment,
+    motionPriors
   });
+}
+
+function renderAtPhase(phase,{resetPhysics=false}={}){
+  if(!model||!metrics||!currentEquipment||!physics)return null;
+
+  const truth=solveTargetsAtPhase(phase);
+
+  physics.captureAllTargets();
+  if(resetPhysics)physics.resetToTargets();
+  else physics.step(2);
+
+  const physicsState=physics.metrics();
   const gt=collectGroundTruth(model,rig,{
-    avatar_id:avatarSel.value,exercise_id:exerciseSel.value,form_id:formSel.value,
-    phase:truth.phase,issues:truth.issues,constraint_error_m:truth.constraint_error_m,measured:truth.measured
+    avatar_id:avatarSel.value,
+    exercise_id:exerciseSel.value,
+    form_id:formSel.value,
+    phase:truth.phase,
+    issues:truth.issues,
+    constraint_error_m:truth.constraint_error_m,
+    measured:truth.measured,
+    motion_prior:truth.motion_prior??null,
+    physics:{
+      max_error_m:physics.maxError(),
+      bodies:physicsState
+    }
   },camera,renderer);
+
   window.__GYM_BUDDY_GT__=gt;
   lastTruth=gt;
   updateHUD(gt);
@@ -139,47 +173,82 @@ async function setScenario(spec={}){
     formSel.value=id;
   }
   configureEquipment();
-  manualPhase=spec.phase??manualPhase;
-  return renderAtPhase(manualPhase);
+  manualPhase=Math.max(0,Math.min(1,Number(spec.phase??manualPhase)||0));
+  return renderAtPhase(manualPhase,{resetPhysics:true});
 }
 
-avatarSel.addEventListener("change",async()=>{playing=false;await loadAvatar();renderAtPhase(manualPhase)});
-exerciseSel.addEventListener("change",()=>{playing=false;configureEquipment();renderAtPhase(manualPhase)});
-formSel.addEventListener("change",()=>{playing=false;renderAtPhase(manualPhase)});
+avatarSel.addEventListener("change",async()=>{
+  playing=false;
+  await loadAvatar();
+  renderAtPhase(manualPhase,{resetPhysics:true});
+});
+exerciseSel.addEventListener("change",()=>{
+  playing=false;
+  configureEquipment();
+  renderAtPhase(manualPhase,{resetPhysics:true});
+});
+formSel.addEventListener("change",()=>{
+  playing=false;
+  renderAtPhase(manualPhase,{resetPhysics:true});
+});
 
 avatarSel.value="quaternius_human";
 exerciseSel.value="smith_squat";
 formSel.value="correct";
 
 configureEquipment();
-const [hydration,backdropResult]=await Promise.all([
+
+const [hydration,backdropResult,priors,physicsInstance]=await Promise.all([
   hydrateCommercialGym(gym),
-  loadGymBackdrop(scene).then(()=>true).catch(e=>{console.warn("gym backdrop failed",e);return false})
+  loadGymBackdrop(scene).then(()=>true).catch(e=>{console.warn("gym backdrop failed",e);return false}),
+  loadMotionPriors().catch(e=>{console.warn("motion priors failed",e);return {squat:null}}),
+  GymPhysics.create()
 ]);
+
 assetHealth={realEquipment:hydration.loaded,failedEquipment:hydration.failed,backdrop:backdropResult};
+motionPriors=priors;
+physics=physicsInstance;
+registerGymPhysics(physics,gym);
+
 await loadAvatar();
 
+solveTargetsAtPhase(manualPhase);
+physics.captureAllTargets();
+physics.resetToTargets();
+
 window.__GYM_BUDDY_SET_SCENARIO__=setScenario;
-window.__GYM_BUDDY_STEP__=phase=>{playing=false;manualPhase=Math.max(0,Math.min(1,Number(phase)||0));return renderAtPhase(manualPhase)};
+window.__GYM_BUDDY_STEP__=phase=>{
+  playing=false;
+  manualPhase=Math.max(0,Math.min(1,Number(phase)||0));
+  return renderAtPhase(manualPhase,{resetPhysics:false});
+};
+window.__GYM_BUDDY_RESET_STEP__=phase=>{
+  playing=false;
+  manualPhase=Math.max(0,Math.min(1,Number(phase)||0));
+  return renderAtPhase(manualPhase,{resetPhysics:true});
+};
 window.__GYM_BUDDY_PLAY__=()=>{playing=true;clock.start();return true};
 window.__GYM_BUDDY_PAUSE__=()=>{playing=false;return lastTruth};
 window.__GYM_BUDDY_SET_CAMERA__=({position,target,fov}={})=>{
   if(position)camera.position.fromArray(position);
   if(target)controls.target.fromArray(target);
-  if(Number.isFinite(fov)){camera.fov=Math.max(20,Math.min(100,fov));camera.updateProjectionMatrix()}
-  return renderAtPhase(manualPhase);
+  if(Number.isFinite(fov)){
+    camera.fov=Math.max(20,Math.min(100,fov));
+    camera.updateProjectionMatrix();
+  }
+  return renderAtPhase(manualPhase,{resetPhysics:false});
 };
 window.__GYM_BUDDY_CAPTURE_PNG__=()=>renderer.domElement.toDataURL("image/png");
 window.__GYM_BUDDY_READY__=true;
 
 renderer.setAnimationLoop(()=>{
   if(playing)manualPhase=cyclePhase(clock.getElapsedTime());
-  renderAtPhase(manualPhase);
+  renderAtPhase(manualPhase,{resetPhysics:false});
 });
 
 addEventListener("resize",()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
-  renderAtPhase(manualPhase);
+  renderAtPhase(manualPhase,{resetPhysics:false});
 });
