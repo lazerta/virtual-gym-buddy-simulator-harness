@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gym-buddy-test-harness"
-version = "0.9.0"
+version = "1.0.0"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26",
@@ -35,6 +35,8 @@ gym-buddy-harness = "harness.cli:main"
 gym-buddy-mujoco-bridge = "harness.mujoco_bridge:main"
 gym-buddy-sim = "harness.mujoco_viewer:main"
 gym-buddy-video-motion = "harness.video_motion_pipeline:main"
+gym-buddy-export-frames = "harness.mujoco_frame_export:main"
+gym-buddy-frame-server = "harness.frame_server:main"
 
 [tool.setuptools]
 packages = ["harness"]
