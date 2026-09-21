@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {BIOMECH,FORM_MODIFIERS} from "./biomechanics.js";
 import {resetRig,resetRoot,alignBoneToWorldPoint} from "./rig.js";
-import {solveTwoBoneIK,distanceForFlexion,jointFlexionDeg} from "./ik.js";
+import {solveTwoBoneIK,distanceForFlexion,jointFlexionDeg,setWorldQuaternion} from "./ik.js";
 
 const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
 const wp=o=>o.getWorldPosition(new THREE.Vector3());
@@ -16,7 +16,19 @@ function setRootTilt(model,rootRest,deg){
   model.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(V(1,0,0),THREE.MathUtils.degToRad(deg)));
   model.updateMatrixWorld(true);
 }
+function placeRootOnAnchor(model,rig,rootRest,anchor){
+  resetRoot(model,rootRest);
+  anchor.updateWorldMatrix(true,false);
+  const aq=anchor.getWorldQuaternion(new THREE.Quaternion());
+  model.quaternion.copy(aq.multiply(rootRest.quaternion.clone()));
+  model.updateMatrixWorld(true);
+  alignBoneToWorldPoint(model,rig.hips,anchor.getWorldPosition(new THREE.Vector3()));
+}
 function placeHips(model,rig,target){alignBoneToWorldPoint(model,rig.hips,target)}
+function setControlWorldPosition(station,node,target){
+  const p=station.group.worldToLocal(target.clone());
+  node.position.copy(p);
+}
 function solveArm(rig,side,target,pole){
   return solveTwoBoneIK({
     upper:side==="L"?rig.leftUpperArm:rig.rightUpperArm,
@@ -48,7 +60,7 @@ function rotateSpineToward(rig,leanDeg){
   rig.spine.updateWorldMatrix(true,true);
 }
 
-function pressMotion(ctx,inclineDeg){
+function pressMotion(ctx){
   const {exercise,form,d,model,rig,rootRest,metrics,station,truth}=ctx;
   const spec=BIOMECH[exercise], rom=romScale(form);
   setRootTilt(model,rootRest,inclineDeg-90);
@@ -66,7 +78,7 @@ function pressMotion(ctx,inclineDeg){
   const rp=mean2(rSh,right).add(V(metrics.shoulderWidth*(.35+extra),-.10,.12));
   const e1=solveArm(rig,"L",left,lp), e2=solveArm(rig,"R",right,rp);
   if(station.bar){station.bar.position.y=y;station.bar.position.z=z}
-  if(station.left){station.left.position.copy(station.group.worldToLocal(left.clone()));station.right.position.copy(station.group.worldToLocal(right.clone()))}
+  if(station.left){setControlWorldPosition(station,station.left,left);setControlWorldPosition(station,station.right,right)}
   if(form==="short_rom")truth.issues.rom_scale=rom;
   if(form==="elbow_flare")truth.issues.elbow_plane_modifier=20;
   if(form==="asymmetry")truth.issues.side_scale=sideScale(form);
@@ -77,6 +89,7 @@ function squatMotion(ctx){
   const {form,d,model,rig,rootRest,metrics,station,truth}=ctx,spec=BIOMECH.smith_squat;
   resetRoot(model,rootRest);resetRig(rig,ctx.rigRest);model.updateMatrixWorld(true);
   const footL=wp(rig.leftFoot),footR=wp(rig.rightFoot),footMid=mean2(footL,footR);
+  const footLQ=rig.leftFoot.getWorldQuaternion(new THREE.Quaternion()),footRQ=rig.rightFoot.getWorldQuaternion(new THREE.Quaternion());
   const flex=spec.kneeFlexBottomDeg*d*romScale(form);
   const legDistance=distanceForFlexion(metrics.thigh,metrics.shin,flex);
   const zShift=.08*d;
@@ -86,12 +99,12 @@ function squatMotion(ctx){
   const inward=form==="knee_valgus"?.07*d:0;
   const leftPole=mean2(wp(rig.leftUpperLeg),footL).add(V(+inward,.05,.45));
   const rightPole=mean2(wp(rig.rightUpperLeg),footR).add(V(-inward,.05,.45));
-  const le=solveLeg(rig,"L",footL,leftPole), re=solveLeg(rig,"R",footR,rightPole);
+  const le=solveTwoBoneIK({upper:rig.leftUpperLeg,lower:rig.leftLowerLeg,end:rig.leftFoot,target:footL,pole:leftPole,endWorldQuaternion:footLQ}), re=solveTwoBoneIK({upper:rig.rightUpperLeg,lower:rig.rightLowerLeg,end:rig.rightFoot,target:footR,pole:rightPole,endWorldQuaternion:footRQ});
   rotateSpineToward(rig,(form==="forward_lean"?spec.trunkLeanStressDeg:spec.trunkLeanNominalDeg)*d);
   model.updateMatrixWorld(true);
   if(station.bar){
     const shoulderMid=mean2(wp(rig.leftUpperArm),wp(rig.rightUpperArm));
-    station.bar.position.y=shoulderMid.y;station.bar.position.z=shoulderMid.z;
+    setControlWorldPosition(station,station.bar,shoulderMid);
     const grip=metrics.shoulderWidth*spec.gripShoulderRatio;
     const lt=V(shoulderMid.x-grip/2,shoulderMid.y,shoulderMid.z), rt=V(shoulderMid.x+grip/2,shoulderMid.y,shoulderMid.z);
     const lp=mean2(wp(rig.leftUpperArm),lt).add(V(-.2,0,.15)), rp=mean2(wp(rig.rightUpperArm),rt).add(V(.2,0,.15));
@@ -105,12 +118,12 @@ function squatMotion(ctx){
 
 function ohpMotion(ctx){
   const {form,d,model,rig,rootRest,metrics,station,truth}=ctx,spec=BIOMECH.seated_ohp,rom=romScale(form);
-  setRootTilt(model,rootRest,0);placeHips(model,rig,wp(station.bodyAnchor));model.updateMatrixWorld(true);
+  placeRootOnAnchor(model,rig,rootRest,station.bodyAnchor);model.updateMatrixWorld(true);
   const l=wp(rig.leftUpperArm),r=wp(rig.rightUpperArm),mid=mean2(l,r),grip=metrics.shoulderWidth*spec.gripShoulderRatio;
   const y=THREE.MathUtils.lerp(mid.y+.05,mid.y+metrics.armReach*.92,d*rom);
   const left=V(mid.x-grip/2,y,mid.z),right=V(mid.x+grip/2,y,mid.z);
   const e1=solveArm(rig,"L",left,mean2(l,left).add(V(-.25,0,.15))),e2=solveArm(rig,"R",right,mean2(r,right).add(V(.25,0,.15)));
-  if(station.left){station.left.position.copy(station.group.worldToLocal(left.clone()));station.right.position.copy(station.group.worldToLocal(right.clone()))}
+  if(station.left){setControlWorldPosition(station,station.left,left);setControlWorldPosition(station,station.right,right)}
   if(form==="short_rom")truth.issues.rom_scale=rom;truth.constraint_error_m=Math.max(e1.error,e2.error);
 }
 
@@ -127,32 +140,32 @@ function lateralRaise(ctx){
 
 function latPulldown(ctx){
   const {form,d,model,rig,rootRest,metrics,station,truth}=ctx,spec=BIOMECH.lat_pulldown,rom=romScale(form);
-  setRootTilt(model,rootRest,0);placeHips(model,rig,wp(station.bodyAnchor));model.updateMatrixWorld(true);
+  placeRootOnAnchor(model,rig,rootRest,station.bodyAnchor);model.updateMatrixWorld(true);
   const l=wp(rig.leftUpperArm),r=wp(rig.rightUpperArm),mid=mean2(l,r),grip=metrics.shoulderWidth*spec.gripShoulderRatio;
   const topY=mid.y+metrics.armReach*.95,bottomY=mid.y+.18;
   const y=THREE.MathUtils.lerp(topY,bottomY,d*rom),z=mid.z-.04;
   const left=V(mid.x-grip/2,y,z),right=V(mid.x+grip/2,y,z);
   const e1=solveArm(rig,"L",left,mean2(l,left).add(V(-.30,0,.15))),e2=solveArm(rig,"R",right,mean2(r,right).add(V(.30,0,.15)));
-  station.bar.position.y=y;station.bar.position.z=z;
+  setControlWorldPosition(station,station.bar,V(mid.x,y,z));
   if(form==="forward_lean"){rotateSpineToward(rig,18*d);truth.issues.trunk_lean_deg=18*d}
   if(form==="short_rom")truth.issues.rom_scale=rom;truth.constraint_error_m=Math.max(e1.error,e2.error);
 }
 
 function tRow(ctx){
   const {form,d,model,rig,rootRest,metrics,station,truth}=ctx,spec=BIOMECH.chest_supported_t_row,rom=romScale(form);
-  setRootTilt(model,rootRest,spec.torsoSupportDeg);placeHips(model,rig,wp(station.bodyAnchor));model.updateMatrixWorld(true);
+  placeRootOnAnchor(model,rig,rootRest,station.bodyAnchor);model.updateMatrixWorld(true);
   const l=wp(rig.leftUpperArm),r=wp(rig.rightUpperArm),mid=mean2(l,r),far=mid.z-.75,near=mid.z-.22;
   const z=THREE.MathUtils.lerp(far,near,d*rom),y=mid.y-.15,half=metrics.shoulderWidth*.42;
   const left=V(mid.x-half,y,z),right=V(mid.x+half,y,z);
   const flare=form==="elbow_flare"?.18:.06;
   const e1=solveArm(rig,"L",left,mean2(l,left).add(V(-flare,0,.25))),e2=solveArm(rig,"R",right,mean2(r,right).add(V(flare,0,.25)));
-  station.handle.position.z=z;
+  setControlWorldPosition(station,station.handle,V(mid.x,y,z));
   if(form==="elbow_flare")truth.issues.elbow_plane_modifier=20;if(form==="short_rom")truth.issues.rom_scale=rom;truth.constraint_error_m=Math.max(e1.error,e2.error);
 }
 
 function legPress(ctx){
   const {form,d,model,rig,rootRest,metrics,station,truth}=ctx,spec=BIOMECH.leg_press,rom=romScale(form),side=sideScale(form);
-  setRootTilt(model,rootRest,-18);placeHips(model,rig,wp(station.bodyAnchor));model.updateMatrixWorld(true);
+  placeRootOnAnchor(model,rig,rootRest,station.bodyAnchor);model.updateMatrixWorld(true);
   const flex=THREE.MathUtils.lerp(spec.kneeFlexTopDeg,spec.kneeFlexBottomDeg,d*rom);
   const reach=distanceForFlexion(metrics.thigh,metrics.shin,flex),rail=V(0,Math.sin(Math.PI/4),-Math.cos(Math.PI/4));
   const lHip=wp(rig.leftUpperLeg),rHip=wp(rig.rightUpperLeg);
