@@ -1,0 +1,20 @@
+{
+  "name": "gym-buddy-visual-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/fetch-assets.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "three": "^0.180.0",
+    "@pixiv/three-vrm": "^3.5.5",
+    "@pixiv/three-vrm-animation": "^3.5.5"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0"
+  }
+}
