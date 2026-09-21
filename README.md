@@ -42,9 +42,9 @@ $env:GYM_BUDDY_PERSONAL_PROFILE="D:\\Private\\gym-buddy-personal-profile.json"
 
 The real personal profile is never committed.
 
-## Fit3D
+## Public real-motion baseline: MM-Fit
 
-Fit3D stays local:
+MM-Fit is the default accessible public baseline. Gym Buddy reads the official `pose_3d.npy` + `labels.csv` files directly; PyTorch and the upstream MM-Fit codebase are not required. Set:\n\n```powershell\n$env:MMFIT_ROOT="D:\\Datasets\\MMFit"\n```\n\nThen validate:\n\n```powershell\nuv run python -m harness.cli mmfit-check --load\n```\n\nDirectly useful movement-family bridges include squat, dumbbell shoulder press, dumbbell row, and seated lateral raise. These are **movement-family references**, not exact substitutes for Smith/bench/machine equipment. Exact equipment-specific motions still come from retargeted real gym video / MuscleMimic trajectories.\n\n## Optional Fit3D benchmark\n\nFit3D is not required for setup, release gates, or the scientific simulation backend. If you happen to have local access, it can still be used as an additional benchmark:\n\nFit3D stays local:
 
 ```powershell
 $env:FIT3D_ROOT="D:\\Datasets\\Fit3D"
