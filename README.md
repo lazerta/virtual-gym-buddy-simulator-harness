@@ -111,3 +111,47 @@ uv run python -m harness.cli motion-status
 The runtime reads MuscleMimic's own serialized `qpos`, `qvel`,
 `split_points`, and `frequency` fields directly. No separate Gym Buddy
 retargeting format is required.
+
+
+## Real gym video → MyoFullBody
+
+For exact equipment-specific motions that MM-Fit does not cover, the scientific
+motion path reuses upstream open-source projects rather than hand-authored
+animation:
+
+```text
+gym video
+  -> WHAM monocular SMPL motion
+  -> Gym Buddy AMASS/SMPL-H compatibility adapter
+  -> MuscleMimic GMR
+  -> MyoFullBody qpos
+  -> MuJoCo
+```
+
+One-time prerequisites:
+
+- clone/setup WHAM and set `WHAM_ROOT`;
+- clone/setup MuscleMimic and set `MUSCLEMIMIC_ROOT`;
+- obtain the required SMPL-family model assets under their own license terms;
+- if WHAM uses a separate Python environment, set `WHAM_PYTHON`.
+
+Then run one Gym Buddy command:
+
+```powershell
+uv run gym-buddy-video-motion --video .\videos\incline_smith_press.mp4 --exercise incline_smith_press
+```
+
+The canonical output is:
+
+```text
+motions/myofullbody/incline_smith_press.npz
+```
+
+The converter selects the longest continuous WHAM subject track, prefers world
+coordinates when available, and converts WHAM's 72D SMPL pose using the same
+body-pose convention used by MuscleMimic's AMASS exporter: preserve the first
+66 axis-angle dimensions, zero the terminal two SMPL hand/wrist slots, and pad
+to the 156D SMPL-H layout.
+
+Use `--dry-run` to print the external WHAM and MuscleMimic commands without
+running them.
