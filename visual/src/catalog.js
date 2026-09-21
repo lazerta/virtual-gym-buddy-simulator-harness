@@ -1,8 +1,7 @@
 export const AVATARS = {
-  soldier:{id:"soldier",label:"Soldier",url:"/models/Soldier.glb",rig:"mixamo"},
-  michelle:{id:"michelle",label:"Michelle",url:"/models/Michelle.glb",rig:"generic"}
+  soldier:{id:"soldier",label:"Soldier",url:"/models/Soldier.glb",rig:"mixamo",targetHeight:1.80},
+  michelle:{id:"michelle",label:"Michelle",url:"/models/Michelle.glb",rig:"generic",targetHeight:1.68}
 };
-
 export const EXERCISES = {
   incline_db_press:{id:"incline_db_press",label:"Incline Dumbbell Press",equipment:"incline_bench_db"},
   flat_db_press:{id:"flat_db_press",label:"Flat Dumbbell Press",equipment:"flat_bench_db"},
@@ -15,12 +14,6 @@ export const EXERCISES = {
   lat_pulldown:{id:"lat_pulldown",label:"Lat Pulldown",equipment:"lat_pulldown"},
   chest_supported_t_row:{id:"chest_supported_t_row",label:"Chest-Supported T Row",equipment:"t_row"}
 };
-
 export const FORMS = {
-  correct:{id:"correct",label:"Correct"},
-  knee_valgus:{id:"knee_valgus",label:"Knee valgus"},
-  short_rom:{id:"short_rom",label:"Short ROM"},
-  forward_lean:{id:"forward_lean",label:"Forward lean"},
-  elbow_flare:{id:"elbow_flare",label:"Elbow flare"},
-  asymmetry:{id:"asymmetry",label:"Left/right asymmetry"}
+  correct:{id:"correct",label:"Correct"},knee_valgus:{id:"knee_valgus",label:"Knee valgus"},short_rom:{id:"short_rom",label:"Short ROM"},forward_lean:{id:"forward_lean",label:"Forward lean"},elbow_flare:{id:"elbow_flare",label:"Elbow flare"},asymmetry:{id:"asymmetry",label:"Left/right asymmetry"}
 };
