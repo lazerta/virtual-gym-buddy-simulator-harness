@@ -106,6 +106,9 @@ class MujocoFrameExporter:
                 f"human_nq={self.sim.human_nq} nor full nq={self.sim.nq}"
             )
 
+    def ground_truth_state(self) -> dict[str, Any]:
+        return capture_state(self.sim.model, self.sim.data).to_dict()
+
     def render_rgb(self) -> np.ndarray:
         self._ensure_renderer()
         assert self._renderer is not None
@@ -171,7 +174,7 @@ class MujocoFrameExporter:
             image_path.write_bytes(encoded.tobytes())
 
             timestamp_us = int(round(i * 1_000_000.0 / motion.fps))
-            state = capture_state(self.sim.model, self.sim.data).to_dict()
+            state = self.ground_truth_state()
 
             gt_payload: dict[str, Any] = {
                 "schema_version": 1,
