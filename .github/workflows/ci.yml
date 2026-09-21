@@ -16,6 +16,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev]"
+      - run: bash -n scripts/setup_motion_stack_wsl.sh
       - run: python -m pytest -q
       - run: python -m pytest -q tests/test_mmfit_adapter.py
       - run: python -m pytest -q tests/test_wham_video_pipeline.py
@@ -35,7 +36,6 @@ jobs:
       - run: npm install
       - run: npm run smoke
       - run: npm run build
-
 
   mujoco-backend:
     runs-on: ubuntu-latest
