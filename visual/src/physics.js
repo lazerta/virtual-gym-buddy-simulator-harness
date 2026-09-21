@@ -166,7 +166,16 @@ export class GymPhysics{
 
   metrics(){
     const out={};
-    for(const [key,e] of this.entries)out[key]={type:e.type,error_m:e.error};
+    for(const [key,e] of this.entries){
+      const p=e.body.translation(),q=e.body.rotation(),v=e.body.linvel(),w=e.body.angvel();
+      out[key]={
+        type:e.type,error_m:e.error,
+        position:[p.x,p.y,p.z],
+        quaternion:[q.x,q.y,q.z,q.w],
+        linear_velocity:[v.x,v.y,v.z],
+        angular_velocity:[w.x,w.y,w.z]
+      };
+    }
     return out;
   }
 
