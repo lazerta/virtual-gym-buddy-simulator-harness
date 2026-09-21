@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -39,12 +40,13 @@ def resolve_paths(
     *,
     work_root: str | os.PathLike[str] = "artifacts/video_motion",
     output_root: str | os.PathLike[str] | None = None,
+    require_video: bool = True,
 ) -> VideoPipelinePaths:
     if exercise_id not in CANONICAL_EXERCISES:
         raise KeyError(f"unknown canonical exercise: {exercise_id}")
 
     video_path = Path(video).expanduser().resolve()
-    if not video_path.exists():
+    if require_video and not video_path.exists():
         raise FileNotFoundError(video_path)
 
     work_dir = Path(work_root).expanduser().resolve() / exercise_id / video_path.stem
@@ -61,6 +63,85 @@ def resolve_paths(
         amass_npz=work_dir / f"{video_path.stem}_smplh_amass.npz",
         myofullbody_npz=output_base / f"{exercise_id}.npz",
     )
+
+
+def public_video_target(
+    url: str,
+    exercise_id: str,
+    *,
+    work_root: str | os.PathLike[str] = "artifacts/video_motion",
+) -> Path:
+    if exercise_id not in CANONICAL_EXERCISES:
+        raise KeyError(f"unknown canonical exercise: {exercise_id}")
+    digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:12]
+    root = Path(work_root).expanduser().resolve() / "_downloads" / exercise_id
+    return root / f"url_{digest}.mp4"
+
+
+def yt_dlp_command(url: str, target: str | os.PathLike[str]) -> list[str]:
+    target = Path(target).expanduser().resolve()
+    template = target.with_suffix(".%(ext)s")
+    return [
+        sys.executable,
+        "-m",
+        "yt_dlp",
+        "--no-playlist",
+        "--no-part",
+        "--merge-output-format",
+        "mp4",
+        "-f",
+        "bv*+ba/b",
+        "-o",
+        str(template),
+        "--print",
+        "after_move:filepath",
+        str(url),
+    ]
+
+
+def download_public_video(
+    url: str,
+    exercise_id: str,
+    *,
+    work_root: str | os.PathLike[str] = "artifacts/video_motion",
+    dry_run: bool = False,
+) -> Path:
+    target = public_video_target(url, exercise_id, work_root=work_root)
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    if target.exists() and target.stat().st_size > 0:
+        print(f"reusing downloaded video: {target}")
+        return target
+
+    cmd = yt_dlp_command(url, target)
+    print("$", " ".join(cmd))
+    if dry_run:
+        return target
+
+    result = subprocess.run(
+        cmd,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    reported = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if reported:
+        candidate = Path(reported[-1]).expanduser()
+        if candidate.exists():
+            if candidate.resolve() != target.resolve():
+                target = candidate.resolve()
+            return target
+
+    if target.exists():
+        return target
+
+    fallback = sorted(target.parent.glob(f"{target.stem}.*"))
+    fallback = [p for p in fallback if p.is_file() and p.suffix not in {".part", ".ytdl"}]
+    if fallback:
+        return fallback[0].resolve()
+
+    raise FileNotFoundError(f"yt-dlp completed without an output file for {url}")
 
 
 def wham_command(
@@ -137,6 +218,7 @@ def run_video_pipeline(
         exercise_id,
         work_root=work_root,
         output_root=output_root,
+        require_video=not dry_run,
     )
 
     paths.work_dir.mkdir(parents=True, exist_ok=True)
@@ -215,7 +297,10 @@ def run_video_pipeline(
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="gym-buddy-video-motion")
-    parser.add_argument("--video", required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--video")
+    source.add_argument("--url")
+
     parser.add_argument("--exercise", required=True, choices=CANONICAL_EXERCISES)
     parser.add_argument("--wham-root", default=None)
     parser.add_argument("--musclemimic-root", default=None)
@@ -233,8 +318,19 @@ def main(argv=None) -> int:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
+    video = args.video
+    if args.url:
+        video = str(
+            download_public_video(
+                args.url,
+                args.exercise,
+                work_root=args.work_root,
+                dry_run=args.dry_run,
+            )
+        )
+
     paths = run_video_pipeline(
-        args.video,
+        video,
         args.exercise,
         wham_root=args.wham_root,
         musclemimic_root=args.musclemimic_root,
