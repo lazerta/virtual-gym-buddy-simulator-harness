@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gym-buddy-test-harness"
-version = "0.7.0"
+version = "0.8.0"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26",
   "pydantic>=2.0",
   "pandas>=2.0",
   "opencv-python>=4.8",
+  "joblib>=1.3",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +33,7 @@ all = [
 gym-buddy-harness = "harness.cli:main"
 gym-buddy-mujoco-bridge = "harness.mujoco_bridge:main"
 gym-buddy-sim = "harness.mujoco_viewer:main"
+gym-buddy-video-motion = "harness.video_motion_pipeline:main"
 
 [tool.setuptools]
 packages = ["harness"]
