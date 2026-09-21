@@ -1,0 +1,19 @@
+{
+  "schema_version": 2,
+  "assets": [
+    {"id":"avatar_quaternius_human","path":"models/avatars/QuaterniusHuman.glb","url":"https://raw.githubusercontent.com/UMRAM-Bilkent/supine-human-model/main/assets/human.glb","license":"CC0-1.0","source":"https://github.com/UMRAM-Bilkent/supine-human-model"},
+    {"id":"avatar_quaternius_superhero_male","path":"models/avatars/QuaterniusSuperheroMale.glb","url":"https://raw.githubusercontent.com/programasweights/avatar/main/public/assets/character.glb","license":"CC0-1.0","source":"https://github.com/programasweights/avatar"},
+    {"id":"gym_starter","path":"models/gym/GymStudio.glb","url":"https://cdn.3dassets.dev/assets/33602/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_dumbbell","path":"models/gym/Dumbbell.glb","url":"https://cdn.3dassets.dev/assets/33560/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_barbell_bare","path":"models/gym/BarbellBare.glb","url":"https://cdn.3dassets.dev/assets/33562/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_barbell_loaded","path":"models/gym/BarbellLoaded.glb","url":"https://cdn.3dassets.dev/assets/33563/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_lat_pulldown","path":"models/gym/LatPulldown.glb","url":"https://cdn.3dassets.dev/assets/33572/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_leg_press","path":"models/gym/LegPress.glb","url":"https://cdn.3dassets.dev/assets/33573/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_power_rack","path":"models/gym/PowerRack.glb","url":"https://cdn.3dassets.dev/assets/33574/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_flat_bench","path":"models/gym/FlatBench.glb","url":"https://cdn.3dassets.dev/assets/33575/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_adjustable_bench_flat","path":"models/gym/AdjustableBenchFlat.glb","url":"https://cdn.3dassets.dev/assets/33576/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"gym_adjustable_bench_incline","path":"models/gym/AdjustableBenchIncline.glb","url":"https://cdn.3dassets.dev/assets/33577/v1/model.glb","license":"CC0-1.0","source":"https://3dassets.dev/packs/gym-and-fitness-studio"},
+    {"id":"cmu_squat_subject22","path":"motions/cmu/22_14.bvh","url":"https://raw.githubusercontent.com/una-dinosauria/cmu-mocap/master/data/022/22_14.bvh","license":"CMU-free-use","source":"https://mocap.cs.cmu.edu/search.php?subjectnumber=22&trinum=14"},
+    {"id":"cmu_squat_subject23","path":"motions/cmu/23_14.bvh","url":"https://raw.githubusercontent.com/una-dinosauria/cmu-mocap/master/data/023/23_14.bvh","license":"CMU-free-use","source":"https://mocap.cs.cmu.edu/search.php?subjectnumber=23&trinum=14"}
+  ]
+}

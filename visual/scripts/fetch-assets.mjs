@@ -1,18 +1,21 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const assets = [
-  ["Soldier.glb","https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb"],
-  ["Michelle.glb","https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Michelle.glb"]
-];
+const manifestPath=new URL("../assets-manifest.json",import.meta.url);
+const manifest=JSON.parse(await fs.readFile(manifestPath,"utf8"));
+const root=path.resolve("public");
 
-const out = path.resolve("public/models");
-await fs.mkdir(out,{recursive:true});
-for (const [name,url] of assets) {
-  const target=path.join(out,name);
-  try { await fs.access(target); console.log("exists",name); continue; } catch {}
-  const r=await fetch(url);
-  if(!r.ok) throw new Error(`asset download failed ${name}: ${r.status}`);
-  await fs.writeFile(target,Buffer.from(await r.arrayBuffer()));
-  console.log("downloaded",name);
+for(const asset of manifest.assets){
+  const target=path.join(root,asset.path);
+  await fs.mkdir(path.dirname(target),{recursive:true});
+  try{
+    const st=await fs.stat(target);
+    if(st.size>1024){console.log("exists",asset.id,st.size);continue;}
+  }catch{}
+  const r=await fetch(asset.url,{redirect:"follow"});
+  if(!r.ok)throw new Error(`asset download failed ${asset.id}: ${r.status} ${r.statusText}`);
+  const bytes=Buffer.from(await r.arrayBuffer());
+  if(bytes.length<1024)throw new Error(`asset too small ${asset.id}: ${bytes.length}`);
+  await fs.writeFile(target,bytes);
+  console.log("downloaded",asset.id,bytes.length);
 }
