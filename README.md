@@ -51,3 +51,28 @@ $env:FIT3D_ROOT="D:\\Datasets\\Fit3D"
 ```
 
 Detector input uses `joints3d_25`; `rep_ann` is independent oracle truth only. See `datasets/FIT3D_LOCAL_SETUP.md`.
+
+
+## Scientific 3D backend
+
+The visual renderer is not the source of biomechanics or physics. The scientific simulation backend uses:
+
+- **MuJoCo** for articulated dynamics, contacts, and equipment rigid-body physics.
+- **MyoSim / MyoFullBody** for the musculoskeletal human model.
+- **MuscleMimic-compatible retargeted trajectories** as an optional motion source.
+- **Three.js** only as a renderer/visualization client consuming exported simulator state.
+
+Install and verify:
+
+```bash
+uv sync --extra mujoco
+uv run python -m harness.cli mujoco-smoke
+```
+
+The JSONL state bridge can be launched with:
+
+```bash
+uv run gym-buddy-mujoco-bridge
+```
+
+It accepts one JSON object per line with operations such as `reset`, `state`, `step`, and `set_qpos`.
