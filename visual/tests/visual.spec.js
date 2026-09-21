@@ -28,7 +28,7 @@ test("real GLB simulation runs every canonical exercise",async({page})=>{
         expect(Object.keys(gt.joints3d).length).toBeGreaterThanOrEqual(13);
         expect(Object.keys(gt.joints2d).length).toBe(Object.keys(gt.joints3d).length);
         expect(Number.isFinite(gt.constraint_error_m)).toBeTruthy();
-        expect(gt.constraint_error_m).toBeLessThan(.12);
+        expect(gt.constraint_error_m,`${avatar}/${exercise}/phase=${phase} contact error`).toBeLessThan(.12);
 
         for(const xyz of Object.values(gt.joints3d)){
           expect(xyz).toHaveLength(3);
