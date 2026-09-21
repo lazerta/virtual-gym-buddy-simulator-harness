@@ -1,30 +1,157 @@
 import * as THREE from "three";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+import {ASSET_PATHS} from "./assets.js";
 
 const MAT={
   steel:new THREE.MeshStandardMaterial({color:0x676d73,metalness:.82,roughness:.25}),
-  dark:new THREE.MeshStandardMaterial({color:0x141619,roughness:.8}),
   pad:new THREE.MeshStandardMaterial({color:0x22252a,roughness:.9}),
   rubber:new THREE.MeshStandardMaterial({color:0x0b0c0d,roughness:.96})
 };
-const addBox=(g,w,h,d,x,y,z,mat=MAT.steel,rx=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.rotation.x=rx;m.castShadow=true;m.receiveShadow=true;g.add(m);return m};
-const addCyl=(g,r,depth,x,y,z,axis="x",mat=MAT.rubber)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,depth,28),mat);if(axis==="x")m.rotation.z=Math.PI/2;else if(axis==="z")m.rotation.x=Math.PI/2;m.position.set(x,y,z);m.castShadow=true;g.add(m);return m};
+
+const group=(parent)=>{const g=new THREE.Group();parent.add(g);return g};
+const box=(g,w,h,d,x,y,z,mat=MAT.steel,rx=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.rotation.x=rx;m.castShadow=true;m.receiveShadow=true;g.add(m);return m};
 const anchor=(g,x,y,z,rx=0)=>{const a=new THREE.Object3D();a.position.set(x,y,z);a.rotation.x=rx;g.add(a);return a};
-const group=scene=>{const g=new THREE.Group();scene.add(g);return g};
-function bench(g,{incline=0,y=.48,z=.15}={}){addBox(g,.58,.11,.55,0,y,z,MAT.pad);addBox(g,.58,.11,1.15,0,y+.42,z+.33,MAT.pad,THREE.MathUtils.degToRad(-incline));addBox(g,.08,.55,.08,-.23,y-.30,z+.1);addBox(g,.08,.55,.08,.23,y-.30,z+.1)}
-function dumbbell(g,x,y,z){const h=addBox(g,.26,.035,.035,x,y,z,MAT.steel);addCyl(g,.095,.07,x-.16,y,z);addCyl(g,.095,.07,x+.16,y,z);return h}
-function barbell(g,y,z){const bar=addBox(g,2.25,.045,.045,0,y,z);for(const x of[-1.12,-1.22,1.12,1.22])addCyl(g,.22,.075,x,y,z);return bar}
+
+function setShadows(root){
+  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+}
+function centerRigid(root){
+  root.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(root),c=b.getCenter(new THREE.Vector3());
+  root.position.sub(c);root.updateMatrixWorld(true);
+}
+function centerAndFloor(root){
+  root.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(root),c=b.getCenter(new THREE.Vector3());
+  root.position.x-=c.x;root.position.z-=c.z;root.position.y-=b.min.y;root.updateMatrixWorld(true);
+}
+async function loadGLB(loader,url,parent,{rigid=false,position=null,rotationY=0}={}){
+  const gltf=await loader.loadAsync(url);
+  const obj=gltf.scene;
+  setShadows(obj);
+  if(rigid) centerRigid(obj); else centerAndFloor(obj);
+  if(position)obj.position.add(position);
+  obj.rotation.y+=rotationY;
+  parent.add(obj);
+  return {scene:obj,animations:gltf.animations};
+}
+function fallbackBench(g,incline=0){
+  box(g,.58,.11,.55,0,.48,.15,MAT.pad);
+  box(g,.58,.11,1.15,0,.90,.48,MAT.pad,THREE.MathUtils.degToRad(-incline));
+}
+function smithRails(g){
+  box(g,.07,2.55,.07,-.93,1.28,.05);
+  box(g,.07,2.55,.07,.93,1.28,.05);
+  box(g,1.93,.07,.07,0,2.54,.05);
+}
+function fallbackOHP(g){
+  box(g,.65,.12,.55,0,.55,.2,MAT.pad);box(g,.65,.12,1.0,0,1.05,.45,MAT.pad,THREE.MathUtils.degToRad(-12));
+  box(g,.12,1.7,.12,-.78,1.05,.15);box(g,.12,1.7,.12,.78,1.05,.15);box(g,1.7,.12,.12,0,1.9,.15);
+}
+function fallbackTRow(g){
+  box(g,.65,.12,.95,0,1.05,.15,MAT.pad,THREE.MathUtils.degToRad(-35));box(g,.75,.1,.5,0,.55,.15,MAT.pad);box(g,.12,1.35,.12,0,.7,-.35);
+}
+
+function station(scene,id){
+  const root=group(scene),visual=group(root),constraints=group(root);
+  root.name=`station:${id}`;
+  return {id,group:root,visual,constraints};
+}
+function control(parent,name){
+  const c=group(parent);c.name=`control:${name}`;return c;
+}
 
 export function createCommercialGym(scene){
   const S={};
-  {const g=group(scene);addBox(g,.12,2.95,.12,-.98,1.475,0);addBox(g,.12,2.95,.12,.98,1.475,0);addBox(g,2.08,.12,.12,0,2.9,0);S.smith={group:g,bar:barbell(g,1.8,0)}}
-  {const g=group(scene);bench(g,{incline:0});S.flat_bench_db={group:g,bodyAnchor:anchor(g,0,.68,.20,-Math.PI/2),left:dumbbell(g,-.45,1.0,0),right:dumbbell(g,.45,1.0,0)}}
-  {const g=group(scene);bench(g,{incline:30});S.incline_bench_db={group:g,bodyAnchor:anchor(g,0,.70,.22,THREE.MathUtils.degToRad(-60)),left:dumbbell(g,-.45,1.05,0),right:dumbbell(g,.45,1.05,0)}}
-  {const g=group(scene);bench(g,{incline:0});addBox(g,.1,1.6,.1,-.85,.8,-.05);addBox(g,.1,1.6,.1,.85,.8,-.05);S.flat_bench_barbell={group:g,bodyAnchor:anchor(g,0,.68,.20,-Math.PI/2),bar:barbell(g,1.15,-.05)}}
-  {const g=group(scene);bench(g,{incline:30});addBox(g,.12,2.95,.12,-.98,1.475,0);addBox(g,.12,2.95,.12,.98,1.475,0);addBox(g,2.08,.12,.12,0,2.9,0);S.incline_smith={group:g,bodyAnchor:anchor(g,0,.70,.22,THREE.MathUtils.degToRad(-60)),bar:barbell(g,1.45,-.02)}}
-  {const g=group(scene);addBox(g,.65,.12,.55,0,.55,.2,MAT.pad);addBox(g,.65,.12,1.0,0,1.05,.45,MAT.pad,THREE.MathUtils.degToRad(-12));addBox(g,1.7,.12,.12,0,1.95,.15);addBox(g,.12,1.7,.12,-.78,1.05,.15);addBox(g,.12,1.7,.12,.78,1.05,.15);S.ohp_machine={group:g,bodyAnchor:anchor(g,0,.75,.20),left:addBox(g,.45,.06,.06,-.58,1.55,.05),right:addBox(g,.45,.06,.06,.58,1.55,.05)}}
-  {const g=group(scene);addBox(g,1.0,.18,1.55,0,.62,.25,MAT.pad,THREE.MathUtils.degToRad(-42));addBox(g,1.3,.12,.12,0,.3,-.35);addBox(g,.12,1.65,.12,-.55,1.05,-.25);addBox(g,.12,1.65,.12,.55,1.05,-.25);S.leg_press={group:g,bodyAnchor:anchor(g,0,.78,.52,THREE.MathUtils.degToRad(-18)),sled:addBox(g,1.15,.10,.75,0,1.28,-.05,MAT.steel,THREE.MathUtils.degToRad(-42))}}
-  {const g=group(scene);S.dumbbells={group:g,left:dumbbell(g,-.5,1.0,0),right:dumbbell(g,.5,1.0,0)}}
-  {const g=group(scene);addBox(g,.95,.12,.55,0,.55,.15,MAT.pad);addBox(g,.12,2.6,.12,-.65,1.3,0);addBox(g,.12,2.6,.12,.65,1.3,0);addBox(g,1.42,.1,.1,0,2.55,0);S.lat_pulldown={group:g,bodyAnchor:anchor(g,0,.72,.18),bar:addBox(g,1.15,.05,.05,0,2.05,.1)}}
-  {const g=group(scene);addBox(g,.65,.12,.95,0,1.05,.15,MAT.pad,THREE.MathUtils.degToRad(-35));addBox(g,.75,.1,.5,0,.55,.15,MAT.pad);addBox(g,.12,1.35,.12,0,.7,-.35);S.t_row={group:g,bodyAnchor:anchor(g,0,.78,.38,THREE.MathUtils.degToRad(35)),handle:addBox(g,1.05,.055,.055,0,.78,-.65)}}
-  Object.values(S).forEach(s=>s.group.visible=false);return S;
+
+  S.smith=station(scene,"smith");
+  smithRails(S.smith.visual);
+  S.smith.bar=control(S.smith.constraints,"bar");
+  S.smith.bar.position.set(0,1.55,.05);
+
+  S.flat_bench_db=station(scene,"flat_bench_db");
+  S.flat_bench_db.bodyAnchor=anchor(S.flat_bench_db.constraints,0,.63,.05,-Math.PI/2);
+  S.flat_bench_db.left=control(S.flat_bench_db.constraints,"left-dumbbell");
+  S.flat_bench_db.right=control(S.flat_bench_db.constraints,"right-dumbbell");
+
+  S.incline_bench_db=station(scene,"incline_bench_db");
+  S.incline_bench_db.bodyAnchor=anchor(S.incline_bench_db.constraints,0,.73,.12,THREE.MathUtils.degToRad(-45));
+  S.incline_bench_db.left=control(S.incline_bench_db.constraints,"left-dumbbell");
+  S.incline_bench_db.right=control(S.incline_bench_db.constraints,"right-dumbbell");
+
+  S.flat_bench_barbell=station(scene,"flat_bench_barbell");
+  S.flat_bench_barbell.bodyAnchor=anchor(S.flat_bench_barbell.constraints,0,.63,.05,-Math.PI/2);
+  S.flat_bench_barbell.bar=control(S.flat_bench_barbell.constraints,"bar");
+
+  S.incline_smith=station(scene,"incline_smith");
+  S.incline_smith.bodyAnchor=anchor(S.incline_smith.constraints,0,.73,.12,THREE.MathUtils.degToRad(-45));
+  smithRails(S.incline_smith.visual);
+  S.incline_smith.bar=control(S.incline_smith.constraints,"bar");
+
+  S.ohp_machine=station(scene,"ohp_machine");
+  fallbackOHP(S.ohp_machine.visual);
+  S.ohp_machine.bodyAnchor=anchor(S.ohp_machine.constraints,0,.72,.20);
+  S.ohp_machine.left=control(S.ohp_machine.constraints,"left-handle");
+  S.ohp_machine.right=control(S.ohp_machine.constraints,"right-handle");
+
+  S.leg_press=station(scene,"leg_press");
+  S.leg_press.bodyAnchor=anchor(S.leg_press.constraints,0,.76,.52,THREE.MathUtils.degToRad(-18));
+  S.leg_press.sled=control(S.leg_press.constraints,"sled");
+  const plate=box(S.leg_press.sled,1.15,.09,.72,0,0,0,MAT.steel,THREE.MathUtils.degToRad(-45));
+  plate.name="kinematic-footplate";
+
+  S.dumbbells=station(scene,"dumbbells");
+  S.dumbbells.left=control(S.dumbbells.constraints,"left-dumbbell");
+  S.dumbbells.right=control(S.dumbbells.constraints,"right-dumbbell");
+
+  S.lat_pulldown=station(scene,"lat_pulldown");
+  S.lat_pulldown.bodyAnchor=anchor(S.lat_pulldown.constraints,0,.69,.15);
+  S.lat_pulldown.bar=control(S.lat_pulldown.constraints,"bar");
+  box(S.lat_pulldown.bar,1.15,.035,.035,0,0,0);
+
+  S.t_row=station(scene,"t_row");
+  fallbackTRow(S.t_row.visual);
+  S.t_row.bodyAnchor=anchor(S.t_row.constraints,0,.76,.34,THREE.MathUtils.degToRad(35));
+  S.t_row.handle=control(S.t_row.constraints,"handle");
+  box(S.t_row.handle,1.05,.04,.04,0,0,0);
+
+  Object.values(S).forEach(s=>s.group.visible=false);
+  return S;
+}
+
+async function attachRigid(loader,url,controlNode){
+  const {scene}=await loadGLB(loader,url,controlNode,{rigid:true});
+  return scene;
+}
+async function attachStatic(loader,url,stationNode){
+  const {scene}=await loadGLB(loader,url,stationNode.visual);
+  return scene;
+}
+
+export async function hydrateCommercialGym(stations){
+  const loader=new GLTFLoader();
+  const jobs=[
+    attachStatic(loader,ASSET_PATHS.gym.powerRack,stations.smith),
+    attachStatic(loader,ASSET_PATHS.gym.flatBench,stations.flat_bench_db),
+    attachStatic(loader,ASSET_PATHS.gym.adjustableBenchIncline,stations.incline_bench_db),
+    attachStatic(loader,ASSET_PATHS.gym.flatBench,stations.flat_bench_barbell),
+    attachStatic(loader,ASSET_PATHS.gym.adjustableBenchIncline,stations.incline_smith),
+    attachStatic(loader,ASSET_PATHS.gym.legPress,stations.leg_press),
+    attachStatic(loader,ASSET_PATHS.gym.latPulldown,stations.lat_pulldown),
+
+    attachRigid(loader,ASSET_PATHS.gym.barbellBare,stations.smith.bar),
+    attachRigid(loader,ASSET_PATHS.gym.barbellBare,stations.flat_bench_barbell.bar),
+    attachRigid(loader,ASSET_PATHS.gym.barbellBare,stations.incline_smith.bar),
+
+    attachRigid(loader,ASSET_PATHS.gym.dumbbell,stations.flat_bench_db.left),
+    attachRigid(loader,ASSET_PATHS.gym.dumbbell,stations.flat_bench_db.right),
+    attachRigid(loader,ASSET_PATHS.gym.dumbbell,stations.incline_bench_db.left),
+    attachRigid(loader,ASSET_PATHS.gym.dumbbell,stations.incline_bench_db.right),
+    attachRigid(loader,ASSET_PATHS.gym.dumbbell,stations.dumbbells.left),
+    attachRigid(loader,ASSET_PATHS.gym.dumbbell,stations.dumbbells.right)
+  ];
+  const results=await Promise.allSettled(jobs);
+  const failures=results.filter(x=>x.status==="rejected");
+  if(failures.length) console.warn("Some real gym assets failed to hydrate",failures.map(x=>x.reason));
+  return {loaded:results.length-failures.length,failed:failures.length};
 }
