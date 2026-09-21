@@ -18,10 +18,6 @@ uv run python -m harness.doctor
 uv run python -m harness.cli validate-profiles --quick --fps 10
 ```
 
-## Codex handoff
-
-> Pull latest `main`, read this README and Drive docs `00–07`, set up with `uv`, then run `pytest`, `python -m harness.doctor`, and `python -m harness.cli validate-profiles --quick --fps 10`. Fix the correct layer; do not weaken tests just to get green. Keep raw Fit3D/other datasets, personal data, secrets, caches, virtualenvs, generated videos/CSVs, and large artifacts out of Git. If `FIT3D_ROOT` is absent, real Fit3D replay is `NOT_RUN`.
-
 ## Architecture rules
 
 - `PrimarySubjectLock` and `TrackingQualityGate` are separate.
@@ -31,6 +27,9 @@ uv run python -m harness.cli validate-profiles --quick --fps 10
 - Generator, production/reference logic, and oracle remain independent.
 - External/anonymous quick validation must pass before the personal stage runs.
 - The public repo contains only a non-personal synthetic fallback profile.
+- **MuJoCo/MyoFullBody is the authoritative scientific 3D backend.**
+- Three.js is visualization only; it must not invent an independent biomechanics solution.
+- Real exercise motion should come from public pose/motion data or real-video retargeting, not hand-authored animation.
 
 ## Private personal profile
 
@@ -44,23 +43,39 @@ The real personal profile is never committed.
 
 ## Public real-motion baseline: MM-Fit
 
-MM-Fit is the default accessible public baseline. Gym Buddy reads the official `pose_3d.npy` + `labels.csv` files directly; PyTorch and the upstream MM-Fit codebase are not required. Set:\n\n```powershell\n$env:MMFIT_ROOT="D:\\Datasets\\MMFit"\n```\n\nThen validate:\n\n```powershell\nuv run python -m harness.cli mmfit-check --load\n```\n\nDirectly useful movement-family bridges include squat, dumbbell shoulder press, dumbbell row, and seated lateral raise. These are **movement-family references**, not exact substitutes for Smith/bench/machine equipment. Exact equipment-specific motions still come from retargeted real gym video / MuscleMimic trajectories.\n\n## Optional Fit3D benchmark\n\nFit3D is not required for setup, release gates, or the scientific simulation backend. If you happen to have local access, it can still be used as an additional benchmark:\n\nFit3D stays local:
+MM-Fit is the default accessible public baseline. Gym Buddy reads the official
+`pose_3d.npy` + `labels.csv` files directly; PyTorch and the upstream MM-Fit
+codebase are not required.
+
+```powershell
+$env:MMFIT_ROOT="D:\\Datasets\\MMFit"
+uv run python -m harness.cli mmfit-check --load
+```
+
+Directly useful movement-family bridges include squat, dumbbell shoulder press,
+dumbbell row, and lateral shoulder raise. These are **movement-family
+references**, not exact substitutes for Smith/bench/machine equipment.
+
+## Optional Fit3D benchmark
+
+Fit3D is **not required** for setup, release gates, or the scientific simulation
+backend. If local access happens to be available, it can still be used as an
+additional benchmark:
 
 ```powershell
 $env:FIT3D_ROOT="D:\\Datasets\\Fit3D"
 ```
 
-Detector input uses `joints3d_25`; `rep_ann` is independent oracle truth only. See `datasets/FIT3D_LOCAL_SETUP.md`.
-
+Detector input uses `joints3d_25`; `rep_ann` is independent oracle truth only.
 
 ## Scientific 3D backend
 
-The visual renderer is not the source of biomechanics or physics. The scientific simulation backend uses:
+The scientific backend uses:
 
 - **MuJoCo** for articulated dynamics, contacts, and equipment rigid-body physics.
 - **MyoSim / MyoFullBody** for the musculoskeletal human model.
-- **MuscleMimic-compatible retargeted trajectories** as an optional motion source.
-- **Three.js** only as a renderer/visualization client consuming exported simulator state.
+- **MuscleMimic/GMR-compatible trajectories** for real movement.
+- **Three.js** only as a renderer/visualization client.
 
 Install and verify:
 
@@ -69,34 +84,30 @@ uv sync --extra mujoco
 uv run python -m harness.cli mujoco-smoke
 ```
 
-The JSONL state bridge can be launched with:
+The JSONL state bridge:
 
 ```bash
 uv run gym-buddy-mujoco-bridge
 ```
 
-It accepts one JSON object per line with operations such as `reset`, `state`, `step`, and `set_qpos`.
-
+It accepts `reset`, `state`, `step`, and `set_qpos`.
 
 ## Native scientific viewer
 
-For the authoritative simulation view, use MuJoCo directly rather than the legacy
-Three.js-authored motion path:
+Use MuJoCo directly for the authoritative simulation view:
 
 ```bash
-uv sync --extra mujoco
 uv run gym-buddy-sim
 ```
 
-Replay an upstream MuscleMimic/LocoMuJoCo MyoFullBody trajectory:
+Replay one retargeted trajectory:
 
 ```bash
 uv run gym-buddy-sim --motion /path/to/trajectory.npz
 ```
 
-Or put canonical exercise trajectories under `GYM_BUDDY_MOTION_ROOT`
-(default `motions/myofullbody`) using names such as
-`smith_squat.npz`, then run:
+Or store canonical trajectories under `GYM_BUDDY_MOTION_ROOT` (default
+`motions/myofullbody`) and run:
 
 ```bash
 uv run gym-buddy-sim --exercise smith_squat
@@ -108,50 +119,84 @@ Check all ten canonical motion slots:
 uv run python -m harness.cli motion-status
 ```
 
-The runtime reads MuscleMimic's own serialized `qpos`, `qvel`,
-`split_points`, and `frequency` fields directly. No separate Gym Buddy
-retargeting format is required.
-
-
 ## Real gym video → MyoFullBody
 
-For exact equipment-specific motions that MM-Fit does not cover, the scientific
-motion path reuses upstream open-source projects rather than hand-authored
-animation:
+Exact equipment-specific motion uses existing open-source projects instead of
+hand-authored animation:
 
 ```text
-gym video
-  -> WHAM monocular SMPL motion
+real gym video / public video URL
+  -> yt-dlp (URL input only)
+  -> WHAM world-grounded SMPL motion
   -> Gym Buddy AMASS/SMPL-H compatibility adapter
   -> MuscleMimic GMR
   -> MyoFullBody qpos
   -> MuJoCo
 ```
 
-One-time prerequisites:
+The WHAM converter selects the longest continuous subject track, prefers world
+coordinates when available, preserves the first 66 SMPL axis-angle dimensions,
+zeros the terminal two SMPL hand/wrist slots, and pads to the 156D SMPL-H layout
+used by the MuscleMimic path.
 
-- clone/setup WHAM and set `WHAM_ROOT`;
-- clone/setup MuscleMimic and set `MUSCLEMIMIC_ROOT`;
-- obtain the required SMPL-family model assets under their own license terms;
-- if WHAM uses a separate Python environment, set `WHAM_PYTHON`.
+### Windows / WSL2 one-command setup
 
-Then run one Gym Buddy command:
+WHAM's upstream installation targets Ubuntu/Python 3.9/CUDA, and MuscleMimic
+inference supports Linux. On Windows, use WSL2.
+
+From PowerShell in the repo root:
 
 ```powershell
-uv run gym-buddy-video-motion --video .\videos\incline_smith_press.mp4 --exercise incline_smith_press
+powershell -ExecutionPolicy Bypass -File .\scripts\setup_motion_stack.ps1
 ```
 
-The canonical output is:
+That wrapper enters WSL2 and runs `scripts/setup_motion_stack_wsl.sh`, which:
+
+- installs Miniforge and `uv` if missing;
+- clones WHAM and MuscleMimic;
+- installs WHAM's upstream Python 3.9 / CUDA 11.3 dependency stack;
+- installs MuscleMimic with `smpl` + `gmr` extras;
+- installs the Gym Buddy MuJoCo runtime;
+- writes `~/gym-buddy-motion-stack/gym-buddy-motion.env`.
+
+**Licensed model files are the one part this script cannot fetch for you.**
+WHAM's SMPL/SMPLify assets and MuscleMimic's SMPL-H/MANO assets require their
+respective registrations/licenses. Credentials are never stored by Gym Buddy.
+
+After those assets are installed, start a WSL shell and run:
+
+```bash
+source ~/gym-buddy-motion-stack/gym-buddy-motion.env
+```
+
+### One command per public video
+
+```bash
+uv run gym-buddy-video-motion \
+  --url "https://www.youtube.com/watch?v=..." \
+  --exercise incline_smith_press
+```
+
+Local video is also supported:
+
+```bash
+uv run gym-buddy-video-motion \
+  --video ./videos/incline_smith_press.mp4 \
+  --exercise incline_smith_press
+```
+
+Canonical output:
 
 ```text
 motions/myofullbody/incline_smith_press.npz
 ```
 
-The converter selects the longest continuous WHAM subject track, prefers world
-coordinates when available, and converts WHAM's 72D SMPL pose using the same
-body-pose convention used by MuscleMimic's AMASS exporter: preserve the first
-66 axis-angle dimensions, zero the terminal two SMPL hand/wrist slots, and pad
-to the 156D SMPL-H layout.
+Then inspect it in the scientific viewer:
 
-Use `--dry-run` to print the external WHAM and MuscleMimic commands without
-running them.
+```bash
+uv run gym-buddy-sim --exercise incline_smith_press
+```
+
+Use `--dry-run` to print the WHAM and MuscleMimic commands without executing
+them. Only download/process public videos when you have the right to do so and
+in accordance with the source platform's terms.
