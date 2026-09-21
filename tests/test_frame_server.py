@@ -59,6 +59,8 @@ def test_frame_server_serves_frames_and_accepts_results(tmp_path):
         session = _read_json(base + "/v1/session")
         assert session["session_id"] == "session-1"
         assert session["frames"][0]["timestamp_us"] == 0
+        assert "ground_truth_path" not in session["frames"][0]
+        assert "image_path" not in session["frames"][0]
 
         with urllib.request.urlopen(base + "/v1/frames/0", timeout=2) as resp:
             assert resp.read() == b"jpeg-bytes"
