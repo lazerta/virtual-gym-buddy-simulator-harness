@@ -1,8 +1,11 @@
+import * as THREE from "three";
+
 export function collectGroundTruth(model,rig,meta){
+  model.updateMatrixWorld(true);
   const joints={};
   for(const [name,b] of Object.entries(rig)){
     if(!b) continue;
-    const v=b.getWorldPosition({x:0,y:0,z:0,set(){return this}});
+    const v=b.getWorldPosition(new THREE.Vector3());
     joints[name]=[v.x,v.y,v.z];
   }
   return {
