@@ -20,6 +20,8 @@ def main(argv=None):
     sub=p.add_subparsers(dest="cmd",required=True)
     sub.add_parser("env-check")
     sub.add_parser("mujoco-smoke")
+    ms=sub.add_parser("motion-status")
+    ms.add_argument("--root",default=None)
 
     f3=sub.add_parser("fit3d-check")
     f3.add_argument("--root",default=None,help="Fit3D dataset root; defaults to FIT3D_ROOT")
@@ -119,6 +121,11 @@ def main(argv=None):
             "time_after_step":state2.time,
         },indent=2))
         return 0
+    if a.cmd=="motion-status":
+        from .motion_registry import motion_status
+        status=motion_status(a.root)
+        print(json.dumps(status,indent=2))
+        return 0 if all(x["available"] for x in status) else 2
     if a.cmd=="fit3d-check":
         adapter=Fit3DLocalAdapter(a.root)
         summary=adapter.summary(load_records=a.load,limit=a.limit)

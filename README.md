@@ -76,3 +76,38 @@ uv run gym-buddy-mujoco-bridge
 ```
 
 It accepts one JSON object per line with operations such as `reset`, `state`, `step`, and `set_qpos`.
+
+
+## Native scientific viewer
+
+For the authoritative simulation view, use MuJoCo directly rather than the legacy
+Three.js-authored motion path:
+
+```bash
+uv sync --extra mujoco
+uv run gym-buddy-sim
+```
+
+Replay an upstream MuscleMimic/LocoMuJoCo MyoFullBody trajectory:
+
+```bash
+uv run gym-buddy-sim --motion /path/to/trajectory.npz
+```
+
+Or put canonical exercise trajectories under `GYM_BUDDY_MOTION_ROOT`
+(default `motions/myofullbody`) using names such as
+`smith_squat.npz`, then run:
+
+```bash
+uv run gym-buddy-sim --exercise smith_squat
+```
+
+Check all ten canonical motion slots:
+
+```bash
+uv run python -m harness.cli motion-status
+```
+
+The runtime reads MuscleMimic's own serialized `qpos`, `qvel`,
+`split_points`, and `frequency` fields directly. No separate Gym Buddy
+retargeting format is required.
