@@ -119,7 +119,7 @@ def main(argv=None):
             "time_after_step":state2.time,
         },indent=2))
         return 0
-    if a.cmd=="fit3d-check":
+    if a.cmd=="motion-status":\n        from .motion_registry import motion_status\n        status=motion_status(a.root)\n        print(json.dumps(status,indent=2))\n        return 0 if all(x["available"] for x in status) else 2\n    if a.cmd=="fit3d-check":
         adapter=Fit3DLocalAdapter(a.root)
         summary=adapter.summary(load_records=a.load,limit=a.limit)
         if a.out:
