@@ -95,9 +95,10 @@ function squatMotion(ctx){
 
   const footL=wp(rig.leftFoot),footR=wp(rig.rightFoot),footMid=mean2(footL,footR);
   const footLQ=wq(rig.leftFoot),footRQ=wq(rig.rightFoot);
-  const flex=spec.kneeFlexBottomDeg*d*rom;
+  const prior=ctx.motionPriors?.squat?.sample(d*rom)??null;
+  const flex=prior?.kneeFlexDeg??spec.kneeFlexBottomDeg*d*rom;
   const legDistance=distanceForFlexion(metrics.thigh,metrics.shin,flex);
-  const zShift=.08*d;
+  const zShift=prior?THREE.MathUtils.clamp(prior.hipForwardNorm*metrics.legReach*.12,-.12,.18):.08*d;
   const vertical=Math.sqrt(Math.max(.01,legDistance*legDistance-zShift*zShift));
   const hipTarget=V(footMid.x,Math.min(wp(rig.hips).y,footMid.y+vertical),footMid.z+zShift);
   placeHips(model,rig,hipTarget);
@@ -108,7 +109,8 @@ function squatMotion(ctx){
   const le=solveLeg(rig,"L",footL,leftPole,footLQ);
   const re=solveLeg(rig,"R",footR,rightPole,footRQ);
 
-  rotateSpineToward(rig,(form==="forward_lean"?spec.trunkLeanStressDeg:spec.trunkLeanNominalDeg)*d);
+  const priorLean=prior?THREE.MathUtils.clamp(prior.trunkLeanDeg,0,40):spec.trunkLeanNominalDeg*d;
+  rotateSpineToward(rig,form==="forward_lean"?spec.trunkLeanStressDeg*d:priorLean);
   model.updateMatrixWorld(true);
 
   if(station.bar){
@@ -124,6 +126,7 @@ function squatMotion(ctx){
   if(form==="short_rom")truth.issues.rom_scale=rom;
   if(form==="knee_valgus")truth.issues.knee_valgus_deg=FORM_MODIFIERS.knee_valgus.valgusDeg;
   if(form==="forward_lean")truth.issues.trunk_lean_deg=spec.trunkLeanStressDeg*d;
+  truth.motion_prior=prior?{source:ctx.motionPriors.squat.source,knee_flex_deg:flex,trunk_lean_deg:priorLean}:null;
   truth.constraint_error_m=Math.max(le.error,re.error);
 }
 
