@@ -40,6 +40,8 @@ export function collectGroundTruth(model,rig,meta,camera,renderer){
     issues:meta.issues,
     constraint_error_m:meta.constraint_error_m??0,
     measured:meta.measured??{},
+    motion_prior:meta.motion_prior??null,
+    physics:meta.physics??null,
     joint_angles:{
       left_elbow_flex_deg:jointFlexionDeg(p("leftUpperArm"),p("leftLowerArm"),p("leftHand")),
       right_elbow_flex_deg:jointFlexionDeg(p("rightUpperArm"),p("rightLowerArm"),p("rightHand")),
