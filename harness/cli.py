@@ -19,6 +19,7 @@ def main(argv=None):
     p=argparse.ArgumentParser(prog="gym-buddy-harness")
     sub=p.add_subparsers(dest="cmd",required=True)
     sub.add_parser("env-check")
+    sub.add_parser("mujoco-smoke")
 
     f3=sub.add_parser("fit3d-check")
     f3.add_argument("--root",default=None,help="Fit3D dataset root; defaults to FIT3D_ROOT")
@@ -102,6 +103,22 @@ def main(argv=None):
     a=p.parse_args(argv)
     if a.cmd=="env-check":
         return print_environment_report()
+    if a.cmd=="mujoco-smoke":
+        from .mujoco_backend import MyoFullBodySimulator
+        sim=MyoFullBodySimulator()
+        state=sim.reset()
+        state2=sim.step([0.0]*sim.nu,nstep=2)
+        print(json.dumps({
+            "backend":"mujoco+myo-sim",
+            "nq":sim.nq,
+            "nv":sim.nv,
+            "nu":sim.nu,
+            "bodies":len(state.body_positions),
+            "sites":len(state.site_positions),
+            "contacts_after_step":len(state2.contacts),
+            "time_after_step":state2.time,
+        },indent=2))
+        return 0
     if a.cmd=="fit3d-check":
         adapter=Fit3DLocalAdapter(a.root)
         summary=adapter.summary(load_records=a.load,limit=a.limit)
