@@ -41,6 +41,21 @@ $env:GYM_BUDDY_PERSONAL_PROFILE="D:\\Private\\gym-buddy-personal-profile.json"
 
 The real personal profile is never committed.
 
+### SyntheticSubjectProfile contract
+
+The harness authors subject variation through a versioned `SyntheticSubjectProfile`.
+It stores normalized skeleton proportions, a bounded synthetic body-shape envelope,
+and visual/clothing/accessory/body-state/rendering variants. The resolved
+`SubjectProfile` remains the small runtime view used by existing simulations.
+
+Purely visual variants share one simulation identity, so changing clothing or
+rendering cannot change the underlying stochastic movement sample. The blocking
+synthetic-subject invariance gate verifies both that visual variants preserve the
+same movement evidence and that all 18 anonymous normalized morphology fixtures
+remain consistent with the independent rep/form oracle.
+
+No exact height, circumference, or body-fat value is inferred by this contract.
+
 ## Public real-motion baseline: MM-Fit
 
 MM-Fit is the default accessible public baseline. Gym Buddy reads the official
