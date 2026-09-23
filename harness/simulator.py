@@ -8,7 +8,8 @@ def _stable_id_seed(value: str) -> int:
 
 
 def simulate(subject: SubjectProfile, exercise: ExerciseProfile, s: Scenario) -> Observation:
-    rng=np.random.default_rng(s.seed ^ _stable_id_seed(subject.id) ^ _stable_id_seed(exercise.id))
+    simulation_identity=subject.simulation_identity or subject.id
+    rng=np.random.default_rng(s.seed ^ _stable_id_seed(simulation_identity) ^ _stable_id_seed(exercise.id))
     physical_scale=subject.stature_scale * (0.97 + 0.06*subject.silhouette_scale)
     family_factor={"squat":1.08,"raise":1.04,"vertical_pull":1.06,"leg_press":.82,"press_db":.76,"press_bar":.75,"press_smith":.76,"press_machine":.82,"row":.80}.get(exercise.family,.9)
     comps=set(s.components or (s.family,))
