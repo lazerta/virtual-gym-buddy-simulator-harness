@@ -1,5 +1,10 @@
 {
   "id": "local_personal",
+  "version": 1,
+  "source_confidence": 0.5,
+  "source_notes": [
+    "local normalized approximation; replace only with evidence-backed measurements"
+  ],
   "stature_scale": 1.0,
   "torso_ratio": 0.31,
   "upper_arm_ratio": 0.186,
