@@ -4,6 +4,12 @@ from typing import Any
 
 @dataclass(frozen=True)
 class SubjectProfile:
+    """Resolved subject fixture consumed by the simulator.
+
+    SyntheticSubjectProfile is the versioned authoring contract. SubjectProfile is
+    intentionally the small, resolved runtime view so older harness code does not
+    need to understand clothing/rendering metadata unless a test needs it.
+    """
     id: str
     source: str
     stature_scale: float = 1.0
@@ -16,6 +22,15 @@ class SubjectProfile:
     hip_width_ratio: float = 0.185
     silhouette_scale: float = 1.0
     visual_variant: str = "neutral"
+    clothing_variant: str = "neutral"
+    accessory_variant: str = "none"
+    body_state_variant: str = "baseline"
+    rendering_variant: str = "neutral"
+    source_confidence: float = 0.5
+    synthetic_profile_version: int = 1
+    # Visual-only variants share this identity so rendering/clothing changes do not
+    # accidentally change the generator's underlying stochastic movement sample.
+    simulation_identity: str | None = None
 
 @dataclass(frozen=True)
 class ExerciseProfile:
